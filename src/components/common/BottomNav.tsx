@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Image as ImageIcon, MessageSquare, PlusCircle, User, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/types";
@@ -14,48 +15,117 @@ interface BottomNavProps {
 
 export function BottomNav({ userRole }: BottomNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { unreadCount } = useChat();
+
+  const isHome = pathname === "/";
+  const [currentTab, setCurrentTab] = useState<string>("gallery");
+
+  // Sync tab with URL searchParams & PopState on client
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname === "/") {
+      const params = new URLSearchParams(window.location.search);
+      const view = params.get("view") || "gallery";
+      setCurrentTab(view);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (window.location.pathname === "/") {
+        const params = new URLSearchParams(window.location.search);
+        setCurrentTab(params.get("view") || "gallery");
+      }
+    };
+
+    const handleSwitch = (e: Event) => {
+      const customEvt = e as CustomEvent<string>;
+      if (customEvt.detail) {
+        setCurrentTab(customEvt.detail);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("app:switch-tab", handleSwitch);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("app:switch-tab", handleSwitch);
+    };
+  }, []);
 
   // Hide on auth pages
   if (pathname.startsWith("/login") || pathname.startsWith("/signup")) {
     return null;
   }
 
+  const handleTabClick = (
+    e: React.MouseEvent,
+    tabKey: "gallery" | "chat" | "mypage",
+    fallbackHref: string
+  ) => {
+    if (isHome) {
+      e.preventDefault();
+      setCurrentTab(tabKey);
+      const newUrl = tabKey === "gallery" ? "/" : `/?view=${tabKey}`;
+      window.history.pushState(null, "", newUrl);
+      window.dispatchEvent(
+        new CustomEvent("app:switch-tab", { detail: tabKey })
+      );
+    } else {
+      e.preventDefault();
+      router.push(fallbackHref);
+    }
+  };
+
   const navItems = [
     {
+      key: "gallery",
       label: "갤러리",
       href: "/",
       icon: ImageIcon,
-      active: pathname === "/" || (pathname.startsWith("/posts/") && !pathname.includes("/create")),
+      active:
+        (isHome && currentTab === "gallery") ||
+        (pathname.startsWith("/posts/") && !pathname.includes("/create")),
+      onClick: (e: React.MouseEvent) => handleTabClick(e, "gallery", "/"),
     },
     {
+      key: "chat",
       label: "메시지",
       href: "/chat",
       icon: MessageSquare,
-      active: pathname.startsWith("/chat"),
+      active: (isHome && currentTab === "chat") || pathname.startsWith("/chat"),
       badge: unreadCount > 0 ? unreadCount : undefined,
+      onClick: (e: React.MouseEvent) => handleTabClick(e, "chat", "/?view=chat"),
     },
     {
+      key: "create",
       label: "글쓰기",
       href: "/posts/create",
       icon: PlusCircle,
       active: pathname === "/posts/create",
       highlight: true,
+      onClick: undefined,
     },
     {
+      key: "mypage",
       label: "마이",
       href: "/mypage",
       icon: User,
-      active: pathname.startsWith("/mypage"),
+      active: (isHome && currentTab === "mypage") || pathname.startsWith("/mypage"),
+      onClick: (e: React.MouseEvent) => handleTabClick(e, "mypage", "/?view=mypage"),
     },
   ];
 
   if (userRole === "ADMIN") {
     navItems.push({
+      key: "admin",
       label: "관리자",
       href: "/admin",
       icon: Shield,
       active: pathname.startsWith("/admin"),
+      badge: undefined,
+      highlight: false,
+      onClick: undefined,
     });
   }
 
@@ -66,10 +136,12 @@ export function BottomNav({ userRole }: BottomNavProps) {
           const Icon = item.icon;
           return (
             <Link
-              key={item.href}
+              key={item.key}
               href={item.href}
+              onClick={item.onClick}
+              prefetch={true}
               className={cn(
-                "relative flex flex-col items-center justify-center py-1 px-3 text-xs font-medium transition-all",
+                "relative flex flex-col items-center justify-center py-1 px-3 text-xs font-medium transition-all select-none cursor-pointer",
                 item.active
                   ? "text-blue-600 dark:text-blue-400 font-semibold"
                   : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"

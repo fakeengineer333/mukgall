@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import { Header } from "@/components/common/Header";
 import { BottomNav } from "@/components/common/BottomNav";
@@ -81,7 +82,9 @@ export default async function RootLayout({
           </main>
 
           <PwaInstallPrompt />
-          <BottomNav userRole={userProfile?.role} currentUserId={userProfile?.id} />
+          <Suspense fallback={null}>
+            <BottomNav userRole={userProfile?.role} currentUserId={userProfile?.id} />
+          </Suspense>
         </ChatProvider>
       </body>
     </html>

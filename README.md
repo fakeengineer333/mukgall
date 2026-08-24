@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.2.3-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,13 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.3.0` (2026-08-25)
+- **🚀 하이브리드 고속 탭 전환 (Hybrid Instant Tab Switching & Keep-Alive) 시스템 구축**
+  - 하단 네비게이션 3대 탭(갤러리 ↔ 메시지 ↔ 마이페이지)을 React 상태 기반 무지연 0.000초 인메모리 스위칭으로 개편
+  - **스크롤 및 상태 보존(Keep-Alive)**: 갤러리 글 목록을 스크롤하던 중 메시지/마이페이지 탭을 다녀와도 스크롤 위치 및 검색 상태가 100% 보존됨
+  - **히스토리 및 URL 동기화**: `window.history.pushState` 및 `popstate` 연동으로 브라우저/스마트폰 '뒤로가기' 누름 시 앱 밖으로 나가지 않고 이전 탭으로 자연스럽게 복귀
+  - **웹 스펙 완벽 준수**: 게시글 상세(`/posts/[id]`) 및 특정 대화방(`/chat/[id]`)은 고유 URL과 SSR을 유지하여 카카오톡 링크 공유 및 OG 미리보기 100% 유지
 
 ### `v0.2.3` (2026-08-25)
 - **⚡ 0.000초 즉시 전송 낙관적 UI (Optimistic UI) 메신저 시스템 탑재**
