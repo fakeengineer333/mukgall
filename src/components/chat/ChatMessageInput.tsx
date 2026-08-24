@@ -56,26 +56,12 @@ export function ChatMessageInput({ roomId }: ChatMessageInputProps) {
     setImagePreview(null);
 
     startTransition(async () => {
-      const res = (await sendMessageAction({
+      await sendMessageAction({
         roomId,
         content: textToSend || (imageToSend ? "" : undefined),
         imageUrl: imageToSend,
         messageType: msgType,
-      })) as any;
-
-      if (res?.success && res.message) {
-        try {
-          const supabase = createClient();
-          const ch = supabase.channel(`chat_messages_${roomId}`);
-          ch.send({
-            type: "broadcast",
-            event: "NEW_MESSAGE",
-            payload: res.message,
-          });
-        } catch {
-          // Ignored fallback
-        }
-      }
+      });
     });
   };
 

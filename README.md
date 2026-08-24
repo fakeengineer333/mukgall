@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.2.2-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,12 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.2.2` (2026-08-25)
+- **💬 푸시 알림 우측 아이콘에 채팅방/보낸 사람 아바타 아이콘 적용**
+  - 알림 수신 시 우측 큰 썸네일에 기본 앱 로고 대신 **채팅방 전용 아이콘(`icon-chat.png`)** 또는 **보낸 사람의 프로필 아바타**가 표시되도록 개선
+- **⚡ Supabase Realtime Deprecation Warning 콘솔 경고 해결**
+  - 미구독 브로드캐스트 채널 전송 폴백을 제거하고 순수 데이터베이스 WAL 스트림 기반 동기화로 일원화하여 `Realtime send() fallback to REST API` 경고 완전 제거
 
 ### `v0.2.1` (2026-08-25)
 - **🛠️ 갤러리 탭 하이드레이션 불일치(React Error #418) 및 DevTools 팝오버 오류 원천 해결**

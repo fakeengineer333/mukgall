@@ -194,24 +194,27 @@ export function ChatProvider({
           }));
           setUnreadCount((prev) => prev + 1);
 
-          // Fetch sender username for push notification
+          // Fetch sender username & avatar for push notification
           let senderName = "새 메시지";
+          let senderAvatar: string | undefined = undefined;
           if (newMsg.sender_id) {
             const { data: senderProf } = await supabase
               .from("profiles")
-              .select("username")
+              .select("username, avatar_url")
               .eq("id", newMsg.sender_id)
               .maybeSingle();
             if (senderProf && (senderProf as any).username) {
               senderName = (senderProf as any).username;
+              senderAvatar = (senderProf as any).avatar_url || undefined;
             }
           }
 
-          // Trigger OS System Notification
+          // Trigger OS System Notification with Chat Room / Sender Avatar Icon
           sendChatNotification({
             title: `💬 ${senderName}`,
             body: newMsg.content || "사진을 보냈습니다.",
             roomId: newMsg.room_id,
+            icon: senderAvatar || "/icons/icon-chat.png",
           });
         }
       };

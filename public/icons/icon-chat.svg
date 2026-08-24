@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="chatBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Background Squircle -->
+  <rect width="192" height="192" rx="44" fill="url(#chatBg)" />
+  
+  <!-- Chat Bubble Icon -->
+  <g transform="translate(40, 40)" fill="#ffffff" filter="url(#shadow)">
+    <path d="M56 0 C25.075 0 0 22.833 0 51 C0 66.86 8.358 80.957 21.644 89.877 L15.2 110.4 C14.654 112.146 16.592 113.626 18.156 112.688 L44.8 96.704 C48.423 97.558 52.164 98 56 98 C86.925 98 112 75.167 112 47 C112 18.833 86.925 0 56 0 Z" />
+    <!-- Three dots inside bubble -->
+    <circle cx="36" cy="48" r="6" fill="#2563eb" />
+    <circle cx="56" cy="48" r="6" fill="#2563eb" />
+    <circle cx="76" cy="48" r="6" fill="#2563eb" />
+  </g>
+</svg>
