@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,18 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.1.2` (2026-08-25)
+- **✨ 로그인 & 회원가입 UI/UX 전면 개편**
+  - 타이틀 간소화: `묵호 갤러리 로그인/회원가입` ➜ `로그인` / `회원가입`
+  - 링크 범위 정밀화: 타이틀 텍스트의 링크를 제거하고 상단 **'묵갤' 앱 아이콘 클릭 시에만 메인 페이지로 이동**하도록 수정
+  - 비밀번호 입력 개선: 인풋 내부 우측에 **비밀번호 보이기/숨기기(Eye/EyeOff) 토글 아이콘** 추가 및 6자 미만 입력 시 실시간 유효성 경고 안내
+  - 닉네임/이메일 입력창: 불필요한 '중복 확인' 버튼 텍스트를 제거하고 입력 포커스 아웃(onBlur) 기반 자동 실시간 중복 검증 피드백으로 정돈
+- **📧 이메일 인증(OTP) 화면 UX 최적화**
+  - 인증 안내 문구 간소화: 혼선을 주던 링크 클릭 안내를 제거하고 메일 본문의 8자리 코드 입력 안내로 일원화
+  - 인증 코드 인풋 레이블 및 플레이스홀더(`********`) 정리
+  - 버튼 문구 변경: `인증 코드로 완료하기` ➜ `인증하기`
+  - 상태 전환 버그 수정: `정보 다시 입력` 클릭 시 `stepOverride`를 통해 즉시 회원가입 폼으로 원활히 복귀하도록 개선
 
 ### `v0.1.1` (2026-08-24)
 - **🎨 PWA 모바일 아이콘 & 스플래시 가시성 전면 개선**

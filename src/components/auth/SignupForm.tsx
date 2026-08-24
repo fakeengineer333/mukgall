@@ -13,8 +13,10 @@ import {
   RotateCcw,
   ArrowLeft,
   CheckCircle2,
-  ExternalLink,
   Mail,
+  Eye,
+  EyeOff,
+  KeyRound,
 } from "lucide-react";
 import {
   signupAction,
@@ -53,10 +55,14 @@ export function SignupForm() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  // Step override for returning from OTP view to signup view
+  const [stepOverride, setStepOverride] = useState<"signup" | "otp" | null>(null);
 
   // Duplicate check status
   const [usernameCheck, setUsernameCheck] = useState<{ checked: boolean; available: boolean; message: string } | null>(null);
@@ -69,10 +75,14 @@ export function SignupForm() {
   const [isResending, startResendTransition] = useTransition();
 
   // Determine if in Step 2 (verification mode)
-  const isVerificationStep = Boolean(signupState?.needsVerification || otpState?.needsVerification);
+  const isVerificationStep =
+    stepOverride === "signup"
+      ? false
+      : Boolean(signupState?.needsVerification || otpState?.needsVerification);
+
   const activeEmail = signupState?.email || otpState?.email || email;
 
-  // Real-time listener: If user clicks the email link on another tab or device, auto-redirect!
+  // Real-time listener: If user confirms on another tab/device, auto-redirect!
   useEffect(() => {
     if (!isVerificationStep) return;
 
@@ -86,7 +96,6 @@ export function SignupForm() {
       }
     });
 
-    // Polling fallback every 3s
     const timer = setInterval(async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session?.user) {
@@ -123,7 +132,7 @@ export function SignupForm() {
   const handleCheckUsername = () => {
     const trimmed = username.trim();
     if (!trimmed) {
-      setUsernameCheck({ checked: true, available: false, message: "닉네임을 입력해주세요." });
+      setUsernameCheck(null);
       return;
     }
     startUsernameCheck(async () => {
@@ -135,7 +144,7 @@ export function SignupForm() {
   const handleCheckEmail = () => {
     const trimmed = email.trim();
     if (!trimmed) {
-      setEmailCheck({ checked: true, available: false, message: "이메일을 입력해주세요." });
+      setEmailCheck(null);
       return;
     }
     const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -168,26 +177,29 @@ export function SignupForm() {
 
   return (
     <Card className="w-full max-w-md border-zinc-800 bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
-      <CardHeader className="space-y-2 text-center pb-5">
-        <Link href="/" className="inline-flex flex-col items-center gap-2.5 group mx-auto">
-          {isVerificationStep ? (
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
-              <MailCheck className="h-6 w-6" />
-            </div>
-          ) : (
-            <Image
-              src="/icons/icon-192.png"
-              alt="묵호 갤러리"
-              width={48}
-              height={48}
-              className="h-12 w-12 rounded-2xl border border-zinc-700/80 shadow-lg object-cover group-hover:scale-105 transition-transform"
-              priority
-            />
-          )}
-          <CardTitle className="text-2xl font-black tracking-tight text-white group-hover:text-blue-400 transition-colors">
-            {isVerificationStep ? "이메일 인증 안내" : "묵호 갤러리 회원가입"}
+      <CardHeader className="space-y-3 text-center pb-5">
+        <div className="flex flex-col items-center gap-2.5 mx-auto">
+          {/* ONLY icon is a clickable link to home */}
+          <Link href="/" className="group" title="홈으로 이동">
+            {isVerificationStep ? (
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
+                <MailCheck className="h-6 w-6" />
+              </div>
+            ) : (
+              <Image
+                src="/icons/icon-192.png"
+                alt="묵호 갤러리"
+                width={48}
+                height={48}
+                className="h-12 w-12 rounded-2xl border border-zinc-700/80 shadow-lg object-cover group-hover:scale-105 transition-transform"
+                priority
+              />
+            )}
+          </Link>
+          <CardTitle className="text-2xl font-black tracking-tight text-white select-none">
+            {isVerificationStep ? "이메일 인증 안내" : "회원가입"}
           </CardTitle>
-        </Link>
+        </div>
         <CardDescription className="text-zinc-400">
           {isVerificationStep
             ? "발송된 이메일을 확인하여 인증을 완료해주세요."
@@ -221,20 +233,15 @@ export function SignupForm() {
               <p className="text-sm font-mono font-bold text-white break-all">{activeEmail}</p>
             </div>
 
-            {/* Verification Instructions (Link Click & OTP Code) */}
-            <div className="rounded-xl bg-blue-950/30 border border-blue-800/40 p-4 space-y-2 text-xs text-zinc-300 leading-relaxed">
+            {/* Verification Instructions */}
+            <div className="rounded-xl bg-blue-950/30 border border-blue-800/40 p-4 space-y-1.5 text-xs text-zinc-300 leading-relaxed">
               <p className="font-bold text-blue-300 flex items-center gap-1.5">
-                <ExternalLink className="h-3.5 w-3.5" />
-                인증 방법 안내
+                <KeyRound className="h-3.5 w-3.5" />
+                인증 안내
               </p>
-              <ol className="list-decimal list-inside space-y-1 text-zinc-300 text-[11px]">
-                <li>
-                  수신된 메일에서 <strong className="text-white">[Confirm your mail]</strong> 링크를 클릭하시면 즉시 로그인이 완료됩니다.
-                </li>
-                <li>
-                  또는 메일 본문에 8자리 코드가 포함되어 있는 경우 아래에 입력하세요.
-                </li>
-              </ol>
+              <p className="text-zinc-300 text-[11px]">
+                메일 본문에 발송된 <strong>8자리 인증 코드</strong>를 아래에 입력해주세요.
+              </p>
             </div>
 
             <input type="hidden" name="email" value={activeEmail} />
@@ -243,16 +250,16 @@ export function SignupForm() {
             <input type="hidden" name="avatar_url" value={signupState?.avatar_url || avatarUrl} />
             <input type="hidden" name="redirectTo" value={redirectTo} />
 
-            {/* Optional 8-digit OTP code input */}
+            {/* 8-digit OTP code input */}
             <div className="space-y-1.5 pt-1">
               <label htmlFor="token" className="text-xs font-semibold text-zinc-300">
-                8자리 인증 코드 (코드 수신 시에만 입력)
+                8자리 인증 코드
               </label>
               <Input
                 id="token"
                 name="token"
                 type="text"
-                placeholder="12345678"
+                placeholder="********"
                 maxLength={10}
                 className="text-center font-mono text-lg tracking-widest h-11"
                 disabled={isOtpPending}
@@ -270,13 +277,18 @@ export function SignupForm() {
                 {isResending ? "재전송 중..." : "인증 메일 다시 보내기"}
               </button>
 
-              <Link
-                href="/signup"
-                className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200"
+              <button
+                type="button"
+                onClick={() => {
+                  setStepOverride("signup");
+                  setEmailCheck(null);
+                  setUsernameCheck(null);
+                }}
+                className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
               >
                 <ArrowLeft className="h-3 w-3" />
                 정보 다시 입력
-              </Link>
+              </button>
             </div>
           </CardContent>
 
@@ -295,7 +307,7 @@ export function SignupForm() {
               ) : (
                 <>
                   <UserPlus className="h-4 w-4" />
-                  인증 코드로 완료하기
+                  인증하기
                 </>
               )}
             </Button>
@@ -303,7 +315,12 @@ export function SignupForm() {
         </form>
       ) : (
         /* STEP 1: Initial Profile & Email Input View */
-        <form action={signupFormAction}>
+        <form
+          action={(formData) => {
+            setStepOverride(null);
+            signupFormAction(formData);
+          }}
+        >
           <CardContent className="space-y-4">
             {signupState?.error && (
               <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400">
@@ -351,44 +368,27 @@ export function SignupForm() {
               </label>
             </div>
 
-            {/* Username with Duplicate & Reserved Check */}
+            {/* Username */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label htmlFor="username" className="text-xs font-semibold text-zinc-300">
-                  닉네임
-                </label>
-                <button
-                  type="button"
-                  onClick={handleCheckUsername}
-                  disabled={isCheckingUsername || isSignupPending || !username.trim()}
-                  className="text-[11px] font-bold text-blue-400 hover:text-blue-300 hover:underline disabled:opacity-40"
-                >
-                  {isCheckingUsername ? "확인 중..." : "중복 확인"}
-                </button>
-              </div>
+              <label htmlFor="username" className="text-xs font-semibold text-zinc-300">
+                닉네임
+              </label>
 
-              <div className="flex gap-2">
-                <Input
-                  id="username"
-                  name="username"
-                  type="text"
-                  placeholder="닉네임 입력 (2~20자)"
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
-                    setUsernameCheck(null);
-                  }}
-                  onBlur={() => {
-                    if (username.trim() && !usernameCheck) {
-                      handleCheckUsername();
-                    }
-                  }}
-                  required
-                  autoComplete="username"
-                  disabled={isSignupPending}
-                  className="flex-1"
-                />
-              </div>
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                placeholder="닉네임 입력 (2~20자)"
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setUsernameCheck(null);
+                }}
+                onBlur={handleCheckUsername}
+                required
+                autoComplete="username"
+                disabled={isSignupPending}
+              />
 
               {usernameCheck && (
                 <p
@@ -406,44 +406,27 @@ export function SignupForm() {
               )}
             </div>
 
-            {/* Email with Duplicate Check */}
+            {/* Email */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label htmlFor="email" className="text-xs font-semibold text-zinc-300">
-                  이메일
-                </label>
-                <button
-                  type="button"
-                  onClick={handleCheckEmail}
-                  disabled={isCheckingEmail || isSignupPending || !email.trim()}
-                  className="text-[11px] font-bold text-blue-400 hover:text-blue-300 hover:underline disabled:opacity-40"
-                >
-                  {isCheckingEmail ? "확인 중..." : "중복 확인"}
-                </button>
-              </div>
+              <label htmlFor="email" className="text-xs font-semibold text-zinc-300">
+                이메일
+              </label>
 
-              <div className="flex gap-2">
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="user@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setEmailCheck(null);
-                  }}
-                  onBlur={() => {
-                    if (email.trim() && !emailCheck) {
-                      handleCheckEmail();
-                    }
-                  }}
-                  required
-                  autoComplete="email"
-                  disabled={isSignupPending}
-                  className="flex-1"
-                />
-              </div>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="user@example.com"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailCheck(null);
+                }}
+                onBlur={handleCheckEmail}
+                required
+                autoComplete="email"
+                disabled={isSignupPending}
+              />
 
               {emailCheck && (
                 <p
@@ -461,22 +444,41 @@ export function SignupForm() {
               )}
             </div>
 
-            {/* Password */}
+            {/* Password with Eye icon and min-length guidance */}
             <div className="space-y-1.5">
               <label htmlFor="password" className="text-xs font-semibold text-zinc-300">
                 비밀번호
               </label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="최소 6자 이상"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-                disabled={isSignupPending}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="최소 6자 이상"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  disabled={isSignupPending}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 transition-colors p-1"
+                  tabIndex={-1}
+                  title={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              {password.length > 0 && password.length < 6 && (
+                <p className="flex items-center gap-1 text-[11px] text-amber-400 font-medium">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  비밀번호는 6자 이상 입력해주세요.
+                </p>
+              )}
             </div>
 
             {/* Bio (Optional) */}
@@ -505,6 +507,7 @@ export function SignupForm() {
               disabled={
                 isSignupPending ||
                 uploadingAvatar ||
+                password.length < 6 ||
                 (usernameCheck !== null && !usernameCheck.available) ||
                 (emailCheck !== null && !emailCheck.available)
               }

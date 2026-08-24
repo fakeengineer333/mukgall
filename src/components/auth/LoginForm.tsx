@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState, useActionState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { LogIn, AlertCircle, Loader2 } from "lucide-react";
+import { LogIn, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { loginAction, AuthState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,25 +14,29 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/";
 
+  const [showPassword, setShowPassword] = useState(false);
   const initialState: AuthState = { error: null };
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
 
   return (
     <Card className="w-full max-w-md border-zinc-800 bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
-      <CardHeader className="space-y-2 text-center pb-6">
-        <Link href="/" className="inline-flex flex-col items-center gap-2.5 group mx-auto">
-          <Image
-            src="/icons/icon-192.png"
-            alt="묵호 갤러리"
-            width={48}
-            height={48}
-            className="h-12 w-12 rounded-2xl border border-zinc-700/80 shadow-lg object-cover group-hover:scale-105 transition-transform"
-            priority
-          />
-          <CardTitle className="text-2xl font-black tracking-tight text-white group-hover:text-blue-400 transition-colors">
-            묵호 갤러리 로그인
+      <CardHeader className="space-y-3 text-center pb-6">
+        <div className="flex flex-col items-center gap-2.5 mx-auto">
+          {/* ONLY Icon is a clickable link to home */}
+          <Link href="/" className="group" title="홈으로 이동">
+            <Image
+              src="/icons/icon-192.png"
+              alt="묵호 갤러리"
+              width={48}
+              height={48}
+              className="h-12 w-12 rounded-2xl border border-zinc-700/80 shadow-lg object-cover group-hover:scale-105 transition-transform"
+              priority
+            />
+          </Link>
+          <CardTitle className="text-2xl font-black tracking-tight text-white select-none">
+            로그인
           </CardTitle>
-        </Link>
+        </div>
         <CardDescription className="text-zinc-400">
           갤러리와 실시간 채팅 서비스를 이용하려면 로그인해주세요.
         </CardDescription>
@@ -76,15 +80,27 @@ export function LoginForm() {
                 비밀번호
               </label>
             </div>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-              disabled={isPending}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+                disabled={isPending}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 transition-colors p-1"
+                tabIndex={-1}
+                title={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
         </CardContent>
 
