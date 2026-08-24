@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProfileEditModal } from "@/components/profile/ProfileEditModal";
 import { LogoutButton } from "@/components/profile/LogoutButton";
+import { NotificationToggle } from "@/components/common/NotificationManager";
 import { formatDate } from "@/lib/utils";
 
 interface ProfileCardProps {
@@ -37,7 +38,8 @@ export function ProfileCard({
               size="xl"
               className="ring-4 ring-zinc-900 shadow-2xl"
             />
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <NotificationToggle />
               <ProfileEditModal profile={profile} />
             </div>
           </div>

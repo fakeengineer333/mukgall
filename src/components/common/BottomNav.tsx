@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Image as ImageIcon, MessageSquare, PlusCircle, User, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/types";
 import { createClient } from "@/lib/supabase/client";
+import { sendChatNotification, isNotificationSupported } from "@/lib/notifications";
 
 interface BottomNavProps {
   userRole?: UserRole | null;
@@ -17,13 +18,37 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentUserId, setCurrentUserId] = useState<string | null>(initialUserId || null);
+  const pathnameRef = useRef(pathname);
+
+  // Keep pathname ref synced without triggering effects
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
+  // Sync initialUserId prop
+  useEffect(() => {
+    if (initialUserId && initialUserId !== currentUserId) {
+      setCurrentUserId(initialUserId);
+    }
+  }, [initialUserId, currentUserId]);
+
+  // Fallback: resolve user ID if not provided
+  useEffect(() => {
+    if (!currentUserId) {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user?.id) {
+          setCurrentUserId(data.user.id);
+        }
+      });
+    }
+  }, [currentUserId]);
 
   // Calculate unread count across user's active rooms
-  const checkUnreadCount = useCallback(async (uid: string) => {
+  const refreshUnreadCount = useCallback(async (uid: string) => {
     try {
       const supabase = createClient();
 
-      // 1. Get user's active rooms and their last_read_at
       const { data: participations } = await supabase
         .from("chat_participants")
         .select("room_id, last_read_at")
@@ -35,7 +60,6 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
         return;
       }
 
-      // 2. Count messages after each room's last_read_at where sender != user
       let totalUnread = 0;
       for (const part of participations) {
         const lastRead = (part as any).last_read_at || "1970-01-01T00:00:00Z";
@@ -51,44 +75,48 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
 
       setUnreadCount(totalUnread);
     } catch (e) {
-      console.warn("[BottomNav] Check unread failed:", e);
+      console.warn("[BottomNav] Count unread failed:", e);
     }
   }, []);
 
-  // Initialize current user and unread count
-  useEffect(() => {
-    const supabase = createClient();
-
-    if (!currentUserId) {
-      supabase.auth.getUser().then(({ data }) => {
-        if (data.user) {
-          setCurrentUserId(data.user.id);
-          checkUnreadCount(data.user.id);
-        }
-      });
-    } else {
-      checkUnreadCount(currentUserId);
-    }
-  }, [currentUserId, checkUnreadCount]);
-
-  // Recalculate when navigating to/from chat pages
+  // Recalculate unread count on pathname or user changes
   useEffect(() => {
     if (currentUserId) {
-      checkUnreadCount(currentUserId);
+      refreshUnreadCount(currentUserId);
     }
-  }, [pathname, currentUserId, checkUnreadCount]);
+  }, [pathname, currentUserId, refreshUnreadCount]);
 
-  // Real-time listener for incoming messages to toggle red dot/badge instantly (Broadcast + Postgres Changes)
+  // Single Realtime subscription for incoming messages & OS Notifications
   useEffect(() => {
     if (!currentUserId) return;
 
     const supabase = createClient();
 
-    const handleNewMessage = (newMsg: { room_id?: string; sender_id?: string }) => {
-      if (!newMsg || newMsg.sender_id === currentUserId) return;
-      // If user is currently looking at this room, don't show badge
-      if (pathname === `/chat/${newMsg.room_id}`) return;
-      setUnreadCount((prev) => prev + 1);
+    const handleIncomingMessage = (newMsg: {
+      room_id?: string;
+      sender_id?: string;
+      content?: string;
+      sender?: { username?: string };
+    }) => {
+      if (!newMsg || !newMsg.room_id || newMsg.sender_id === currentUserId) return;
+
+      const currentPath = pathnameRef.current;
+      const isViewingCurrentRoom = currentPath === `/chat/${newMsg.room_id}`;
+
+      // Update badge if not currently in this room
+      if (!isViewingCurrentRoom) {
+        setUnreadCount((prev) => prev + 1);
+      }
+
+      // Fire OS System Notification if in another tab, app background, or not in that chat room
+      const senderName = newMsg.sender?.username || "새 메시지";
+      const messageSnippet = newMsg.content || "사진을 보냈습니다.";
+
+      sendChatNotification({
+        title: `💬 ${senderName}`,
+        body: messageSnippet,
+        roomId: newMsg.room_id,
+      });
     };
 
     const channel = supabase
@@ -96,9 +124,17 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
         config: { broadcast: { self: true } },
       })
       .on("broadcast", { event: "NEW_MESSAGE" }, (payload) => {
-        const data = payload.payload as { roomId?: string; message?: { room_id?: string; sender_id?: string } };
+        const data = payload.payload as {
+          roomId?: string;
+          message?: {
+            room_id?: string;
+            sender_id?: string;
+            content?: string;
+            sender?: { username?: string };
+          };
+        };
         if (data?.message) {
-          handleNewMessage(data.message);
+          handleIncomingMessage(data.message);
         }
       })
       .on(
@@ -109,9 +145,13 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
           table: "messages",
         },
         (payload) => {
-          const newMsg = payload.new as { room_id?: string; sender_id?: string };
+          const newMsg = payload.new as {
+            room_id?: string;
+            sender_id?: string;
+            content?: string;
+          };
           if (newMsg) {
-            handleNewMessage(newMsg);
+            handleIncomingMessage(newMsg);
           }
         }
       )
@@ -120,7 +160,25 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUserId, pathname]);
+  }, [currentUserId]);
+
+  // Auto request notification permission on user's first click if supported
+  useEffect(() => {
+    if (currentUserId && isNotificationSupported() && Notification.permission === "default") {
+      const handleFirstInteraction = () => {
+        Notification.requestPermission().then((p) => {
+          if (p === "granted") {
+            localStorage.setItem("mukgall_notifications_enabled", "true");
+          }
+        });
+        window.removeEventListener("click", handleFirstInteraction);
+      };
+      window.addEventListener("click", handleFirstInteraction, { once: true });
+      return () => {
+        window.removeEventListener("click", handleFirstInteraction);
+      };
+    }
+  }, [currentUserId]);
 
   // Hide on auth pages
   if (pathname.startsWith("/login") || pathname.startsWith("/signup")) {

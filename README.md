@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.5-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,14 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.1.5` (2026-08-25)
+- **🔔 Web Notification API 기반 OS 시스템 실시간 채팅 알림 도입**
+  - 브라우저 탭을 백그라운드로 내려두거나 다른 페이지 탐색 중일 때도 새 메시지가 오면 스마트폰 상단 알림 바 / PC 알림 센터에 시스템 알림 푸시 배너 발송
+  - 알림 터치/클릭 시 해당 대화방(`/chat/[id]`)으로 100% 즉시 자동 전환 연동
+  - 마이페이지(`MyPage`)에 "알림 켜기/끄기" 토글 스위치 제공 및 최초 1회 자연스러운 권한 요청 흐름 구현
+- **⚡ 리액트 렌더링 무한 루프(PostMessage / Maximum call stack exceeded) 완전 해결**
+  - `BottomNav`의 미확인 메시지 계산 훅과 실시간 웹소켓 구독 의존성을 최적화하여 `pathname` 변경 및 상태 갱신 시 발생하던 중복 채널 생성과 스케줄러 재호출 루프 완벽 제거
 
 ### `v0.1.4` (2026-08-25)
 - **🎨 채팅방 헤더 여백 및 스크롤 레이아웃 최적화**
