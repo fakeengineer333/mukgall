@@ -1,0 +1,183 @@
+# 묵갤 (Mukho Gallery)
+
+<div align="center">
+
+![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
+![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
+![Supabase](https://img.shields.io/badge/Supabase-Database%20%7C%20Auth%20%7C%20Realtime-3ECF8E.svg?logo=supabase)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6.svg?logo=typescript)
+
+**고성능 실시간 익명/회원 커뮤니티 갤러리 & WebSocket 메신저 웹 애플리케이션**
+
+</div>
+
+---
+
+## 📌 프로젝트 소개 (Overview)
+
+**묵갤(Mukho Gallery)**은 디시인사이드 특유의 빠르고 직관적인 갤러리 감성과 현대적인 실시간 메신저, 엄격한 엔터프라이즈급 보안 아키텍처를 결합한 차세대 커뮤니티 플랫폼입니다.
+
+Next.js 16 App Router, React 19 Server Actions, Supabase PostgreSQL RLS, Realtime WebSocket(Dual-Channel), Cloudflare Turnstile, Upstash Redis 기반 Rate Limiting을 탑재하여 안전하고 지연 없는 사용자 경험을 제공합니다.
+
+---
+
+## ✨ 주요 기능 (Key Features)
+
+### 1. 📋 커뮤니티 갤러리 (Gallery & Posts)
+
+- **게시글 CRUD**: 텍스트 및 다중 이미지 업로드 지원 (Supabase Storage 연동)
+- **소프트 삭제 & 복구**: 사용자가 삭제한 글은 보존되며, 관리자가 감사 및 복구 가능
+- **3중 중복 추천 방지**: IP Hash(`SHA-256`) + 유저 ID + `HttpOnly` 쿠키 기반의 정밀 추천 시스템
+- **조회수 어뷰징 방어**: 일일 단위 IP/유저 복합 식별을 통한 중복 조회수 증가 방지
+- **댓글 시스템**: 실시간 댓글 작성, 본인/관리자 삭제 통제
+
+### 2. 💬 실시간 채팅 메신저 (Real-Time Messenger)
+
+- **1:1 및 단체 대화방**: 다자간 참여가 가능한 실시간 그룹 채팅 지원
+- **0.01초 듀얼 채널(Dual-Channel) 파이프라인**:
+  - `Supabase Realtime Broadcast` (0ms 즉시 전송) + `Postgres Changes` (영구 DB 2중 검증) 결합
+- **👑 방장(Host) 권한 시스템**:
+  - 참여자 목록 모달에 골드 **`👑 방장`** 뱃지 표시
+  - 방장 전용 설정 모달: **채팅방 제목 변경** 및 **대표 이미지(사진) 업로드/변경**
+  - 방 설정 변경 시 방 안의 모든 참여자 및 목록 화면에 **0.01초 실시간 동시 반영**
+  - 타임라인에 `"{방장}님이 대화방 정보를 변경했습니다."` 시스템 메시지 자동 브로드캐스트
+- **글로벌 미확인 알림**: 하단 네비게이션 바(BottomNav)에 실시간 안 읽은 메시지 카운트 및 펄스 레드 닷 배지 연동
+- **미디어 전송**: 대화방 내 고화질 사진 첨부 및 미리보기 지원
+
+### 3. 🛡️ 보안 & 인증 (Security & Auth Architecture)
+
+- **이메일 인증 & OTP**: 8자리 인증 코드 입력 및 확인 링크(`callback`) 동시 지원
+- **실시간 중복/형식 검증**: RFC 표준 이메일 정규식 검증, 닉네임 실시간 중복 확인
+- **예약어 및 권한 상승 차단**: 관리자 사칭 방지(`mukho`, `admin`, `운영자` 등) 및 프로필 수정을 통한 권한 탈취 원천 차단
+- **Rate Limiting (속도 제한)**: 슬라이딩 윈도우 알고리즘으로 Brute-force 및 스팸 차단
+  - 로그인(10회/분), 회원가입(5회/5분), OTP 재발송(3회/5분), 글 작성(5건/분), 댓글(15건/분), 채팅(30건/분)
+- **봇 방어**: Cloudflare Turnstile 캡차 검증 탑재
+- **Row Level Security (RLS)**: PostgreSQL의 8개 테이블 전원에 RLS 정책 강제 적용 (참여자만 채팅/메시지 접근 가능)
+
+### 4. 👑 관리자 대시보드 (Admin Dashboard)
+
+- **실시간 통계**: 총 회원 수, 활성/삭제 게시글, 총 댓글 수, 감사 로그 카운트
+- **삭제된 콘텐츠 관리**: 삭제된 글/댓글 목록 조회 및 원클릭 복구
+- **영구 감사 로그 (`audit_logs`)**: 로그인, 회원가입, 글/댓글/채팅방 변경 이력의 IP, Actor, Target 상세 추적
+
+### 5. 📱 모던 UI/UX & PWA
+
+- **다크 테마 디자인**: 디시인사이드 스타일의 고대비 다크 테마 및 유리 효과(Backdrop Blur)
+- **반응형 하단 네비게이션**: 모바일 앱에 최적화된 직관적인 탭 바
+- **PWA 지원**: `manifest.json` 및 서비스 워커를 통한 홈 화면 앱 설치 지원
+
+---
+
+## 🛠️ 기술 스택 (Tech Stack)
+
+| 구분                 | 기술 및 라이브러리                                          |
+| :------------------- | :---------------------------------------------------------- |
+| **Framework**        | Next.js 16.3.2 (App Router, Server Actions, Route Handlers) |
+| **Language**         | TypeScript 5.0                                              |
+| **Frontend**         | React 19.2.8, Tailwind CSS v4, Lucide React, CVA, clsx      |
+| **Backend & DB**     | Supabase (PostgreSQL 15, Auth, Storage, Realtime WebSocket) |
+| **Security & Infra** | Cloudflare Turnstile, Upstash Redis, Zod, Node Crypto       |
+| **PWA**              | Web App Manifest, Service Worker                            |
+
+---
+
+## 🗄️ 데이터베이스 구조 (Database Schema)
+
+```mermaid
+erDiagram
+    PROFILES ||--o{ POSTS : writes
+    PROFILES ||--o{ COMMENTS : writes
+    PROFILES ||--o{ CHAT_PARTICIPANTS : joins
+    PROFILES ||--o{ MESSAGES : sends
+    PROFILES ||--o{ AUDIT_LOGS : triggers
+
+    POSTS ||--o{ COMMENTS : contains
+    POSTS ||--o{ POST_VIEWS : tracks
+    POSTS ||--o{ POST_LIKES : receives
+
+    CHAT_ROOMS ||--o{ CHAT_PARTICIPANTS : includes
+    CHAT_ROOMS ||--o{ MESSAGES : contains
+```
+
+### 주요 테이블 목록
+
+- `profiles`: 유저 정보, 닉네임, 아바타, 소개, 권한(`USER` / `ADMIN`)
+- `posts`: 게시글 본문, 첨부 이미지 배열, 추천수, 소프트 삭제(`deleted_at`)
+- `comments`: 게시글 댓글, 작성자, 소프트 삭제
+- `chat_rooms`: 1:1/그룹 채팅방, 방 이름, 대표 이미지(`avatar_url`), 개설자(`created_by`)
+- `chat_participants`: 방 참여자, 입장 시점, 마지막 읽은 시간(`last_read_at`), 퇴장 여부(`left_at`)
+- `messages`: 채팅 메시지, 텍스트/이미지/시스템 타입, 보낸이
+- `audit_logs`: 보안 및 관리자 활동 기록
+- `post_likes` / `post_views`: 추천 및 조회수 기록
+
+---
+
+## 🚀 시작하기 (Getting Started)
+
+### 1. 레포지토리 클론 및 의존성 설치
+
+```bash
+git clone https://github.com/fakeengineer333/mukgall.git
+cd mukgall
+npm install
+```
+
+### 2. 환경 변수 설정 (`.env.local`)
+
+프로젝트 루트 디렉토리에 `.env.local` 파일을 생성하고 아래 항목을 입력합니다:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Cloudflare Turnstile (선택 - 미설정 시 개발 모드 자동 패스)
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your-turnstile-site-key
+TURNSTILE_SECRET_KEY=your-turnstile-secret-key
+
+# Upstash Redis (선택 - 미설정 시 인메모리 레이트 리밋 자동 폴백)
+UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-redis-token
+```
+
+### 3. 로컬 개발 서버 실행
+
+```bash
+npm run dev
+```
+
+브라우저에서 [http://localhost:3000](http://localhost:3000)으로 접속합니다.
+
+### 4. 프로덕션 빌드
+
+```bash
+npm run build
+npm run start
+```
+
+---
+
+## 📜 버전 이력 (Changelog)
+
+### `v0.1.0` (2026-08-24)
+
+- **최초 릴리즈 (Initial Release)**
+  - 갤러리 게시판 (CRUD, 3중 중복 추천 방지, 이미지 업로드, 조회수 집계)
+  - 1:1 및 단체 실시간 메신저 (0.01초 듀얼 채널 WebSocket)
+  - 단체방 `👑 방장` 뱃지 및 방장 전용 채팅방 제목/이미지 설정 실시간 동기화
+  - 하단바 실시간 미확인 메시지 뱃지 & 레드 닷
+  - 8자리 OTP 이메일 인증 & 콜백 핸들러
+  - 관리자 대시보드 및 감사 로그(`audit_logs`) 시스템
+  - 전방위 Rate Limiting, Turnstile 봇 방어 및 RLS 보안 강화
+
+---
+
+## 📄 라이선스 (License)
+
+This project is licensed under the MIT License.

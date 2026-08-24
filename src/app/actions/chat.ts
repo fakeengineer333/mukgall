@@ -1,0 +1,429 @@
+"use server";
+
+import { z } from "zod";
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { recordAuditLog } from "@/lib/audit";
+import { checkRateLimit } from "@/lib/ratelimit";
+import { Profile } from "@/types";
+
+export async function searchUsersAction(query: string): Promise<Profile[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  // Search profiles matching username except current user
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .ilike("username", `%${trimmed}%`)
+    .neq("id", user.id)
+    .limit(10);
+
+  return (data || []) as unknown as Profile[];
+}
+
+interface CreateChatRoomParams {
+  isGroup: boolean;
+  targetUserIds: string[];
+  name?: string;
+}
+
+export async function createChatRoomAction({
+  isGroup,
+  targetUserIds,
+  name,
+}: CreateChatRoomParams): Promise<{ success: boolean; roomId?: string; error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "로그인이 필요합니다." };
+  }
+
+  if (targetUserIds.length === 0) {
+    return { success: false, error: "대화할 상대를 최소 1명 이상 선택해주세요." };
+  }
+
+  // Get current user profile for system message
+  const { data: myProfile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  const myUsername = (myProfile as unknown as Profile)?.username || "사용자";
+
+  // If 1:1 chat (not group and 1 target user), check if room already exists
+  if (!isGroup && targetUserIds.length === 1) {
+    const targetId = targetUserIds[0];
+
+    // Find if 1:1 room already exists between these 2 users
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: myRooms } = await (supabase.from("chat_participants") as any)
+      .select("room_id, chat_rooms!inner(is_group)")
+      .eq("user_id", user.id)
+      .eq("chat_rooms.is_group", false);
+
+    if (myRooms && myRooms.length > 0) {
+      const roomIds = (myRooms as { room_id: string }[]).map((r) => r.room_id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existingTarget } = await (supabase.from("chat_participants") as any)
+        .select("room_id")
+        .in("room_id", roomIds)
+        .eq("user_id", targetId)
+        .is("left_at", null)
+        .limit(1);
+
+      if (existingTarget && (existingTarget as { room_id: string }[]).length > 0) {
+        return { success: true, roomId: (existingTarget as { room_id: string }[])[0].room_id };
+      }
+    }
+  }
+
+  const roomName = isGroup ? name?.trim() || `${myUsername}님의 그룹 대화방` : null;
+
+  // 1. Try atomic create_chat_room RPC function
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rpcRes, error: rpcErr } = await (supabase as any).rpc("create_chat_room", {
+      p_is_group: isGroup,
+      p_name: roomName,
+      p_participant_ids: targetUserIds,
+    });
+
+    if (!rpcErr && rpcRes) {
+      const parsed = typeof rpcRes === "string" ? JSON.parse(rpcRes) : rpcRes;
+      if (parsed.success && parsed.room_id) {
+        await recordAuditLog({
+          actorId: user.id,
+          action: "CHAT_ROOM_CREATE",
+          targetType: "chat_rooms",
+          targetId: parsed.room_id,
+          metadata: { isGroup, participantCount: targetUserIds.length + 1, roomName },
+        });
+
+        revalidatePath("/chat");
+        return { success: true, roomId: parsed.room_id };
+      }
+    }
+  } catch (e) {
+    console.warn("[Chat] RPC create_chat_room notice:", e);
+  }
+
+  // 2. Direct client insert fallback
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let { data: newRoom, error: roomErr } = await (supabase.from("chat_rooms") as any)
+    .insert({
+      name: roomName,
+      is_group: isGroup,
+      created_by: user.id,
+    })
+    .select()
+    .single();
+
+  if (roomErr || !newRoom) {
+    return { success: false, error: `채팅방 생성 실패: ${roomErr?.message}` };
+  }
+
+  const roomId = newRoom.id;
+
+  // Add all participants (including creator)
+  const participantIds = Array.from(new Set([user.id, ...targetUserIds]));
+  const participantsToInsert = participantIds.map((uid) => ({
+    room_id: roomId,
+    user_id: uid,
+    joined_at: new Date().toISOString(),
+    last_read_at: new Date().toISOString(),
+  }));
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("chat_participants") as any).insert(participantsToInsert);
+
+  // Send initial system message
+  const systemContent = isGroup
+    ? `${myUsername}님이 단체 대화방을 개설했습니다.`
+    : `대화가 시작되었습니다.`;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("messages") as any).insert({
+    room_id: roomId,
+    sender_id: user.id,
+    content: systemContent,
+    message_type: "SYSTEM",
+  });
+
+  // Record audit log
+  await recordAuditLog({
+    actorId: user.id,
+    action: "CHAT_ROOM_CREATE",
+    targetType: "chat_rooms",
+    targetId: roomId,
+    metadata: { isGroup, participantCount: participantIds.length, roomName },
+  });
+
+  revalidatePath("/chat");
+  return { success: true, roomId };
+}
+
+interface SendMessageParams {
+  roomId: string;
+  content?: string;
+  imageUrl?: string;
+  messageType?: "TEXT" | "IMAGE";
+}
+
+export async function sendMessageAction({
+  roomId,
+  content,
+  imageUrl,
+  messageType = "TEXT",
+}: SendMessageParams): Promise<{ success: boolean; error?: string; message?: any }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "로그인이 필요합니다." };
+  }
+
+  if (messageType === "TEXT" && (!content || !content.trim())) {
+    return { success: false, error: "메시지 내용을 입력해주세요." };
+  }
+
+  if (messageType === "IMAGE" && !imageUrl) {
+    return { success: false, error: "이미지 URL이 유효하지 않습니다." };
+  }
+
+  // Rate Limiting (Max 30 messages per minute)
+  const rateLimitResult = await checkRateLimit(`chat_msg:${user.id}`, 30, 60);
+  if (!rateLimitResult.success) {
+    return { success: false, error: "메시지 전송 요청이 너무 빠릅니다." };
+  }
+
+  // Verify participant
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: participant } = await (supabase.from("chat_participants") as any)
+    .select("left_at")
+    .eq("room_id", roomId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!participant || participant.left_at !== null) {
+    return { success: false, error: "대화방에 참여 중이지 않습니다." };
+  }
+
+  const messageData = {
+    room_id: roomId,
+    sender_id: user.id,
+    content: content?.trim() || null,
+    image_url: imageUrl || null,
+    message_type: messageType,
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: insertedMsg, error } = await (supabase.from("messages") as any)
+    .insert(messageData)
+    .select("*, sender:profiles(*)")
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  // Update sender's last_read_at
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("chat_participants") as any)
+    .update({ last_read_at: new Date().toISOString() })
+    .eq("room_id", roomId)
+    .eq("user_id", user.id);
+
+  return { success: true, message: insertedMsg };
+}
+
+export async function leaveChatRoomAction(
+  roomId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "로그인이 필요합니다." };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .single();
+
+  const username = (profile as { username?: string } | null)?.username || "사용자";
+
+  // Mark left_at using user's supabase client
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from("chat_participants") as any)
+    .update({ left_at: new Date().toISOString() })
+    .eq("room_id", roomId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  // Send system message that user left
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("messages") as any).insert({
+    room_id: roomId,
+    sender_id: user.id,
+    content: `${username}님이 대화방을 나갔습니다.`,
+    message_type: "SYSTEM",
+  });
+
+  // Record audit log
+  await recordAuditLog({
+    actorId: user.id,
+    action: "CHAT_ROOM_LEAVE",
+    targetType: "chat_rooms",
+    targetId: roomId,
+  });
+
+  revalidatePath("/chat");
+  return { success: true };
+}
+
+export async function updateLastReadAction(roomId: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from("chat_participants") as any)
+      .update({ last_read_at: new Date().toISOString() })
+      .eq("room_id", roomId)
+      .eq("user_id", user.id);
+  } catch (err) {
+    console.warn("[Chat] Update last read failed:", err);
+  }
+}
+
+export async function updateChatRoomAction({
+  roomId,
+  name,
+  avatarUrl,
+}: {
+  roomId: string;
+  name: string;
+  avatarUrl?: string | null;
+}): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "로그인이 필요합니다." };
+  }
+
+  // Verify creator
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: room, error: fetchErr } = await (supabase.from("chat_rooms") as any)
+    .select("created_by, is_group")
+    .eq("id", roomId)
+    .single();
+
+  if (fetchErr || !room) {
+    return { success: false, error: "대화방을 찾을 수 없습니다." };
+  }
+
+  if (room.created_by !== user.id) {
+    return { success: false, error: "방장만 대화방 설정을 변경할 수 있습니다." };
+  }
+
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    return { success: false, error: "대화방 이름을 입력해주세요." };
+  }
+
+  // 1. Try atomic update_chat_room RPC function (Bypasses RLS UPDATE restrictions)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rpcRes, error: rpcErr } = await (supabase as any).rpc("update_chat_room", {
+      p_room_id: roomId,
+      p_name: trimmedName,
+      p_avatar_url: avatarUrl || null,
+    });
+
+    if (!rpcErr && rpcRes) {
+      const parsed = typeof rpcRes === "string" ? JSON.parse(rpcRes) : rpcRes;
+      if (parsed.success) {
+        revalidatePath(`/chat/${roomId}`);
+        revalidatePath("/chat");
+        return { success: true };
+      }
+      if (parsed.error) {
+        return { success: false, error: parsed.error };
+      }
+    }
+  } catch (e) {
+    console.warn("[updateChatRoom] RPC notice:", e);
+  }
+
+  // 2. Direct client update fallback
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let { error: updateErr } = await (supabase.from("chat_rooms") as any)
+    .update({
+      name: trimmedName,
+      avatar_url: avatarUrl || null,
+    })
+    .eq("id", roomId);
+
+  if (updateErr && updateErr.message.includes("avatar_url")) {
+    // Fallback: update room name only
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fallbackRes = await (supabase.from("chat_rooms") as any)
+      .update({ name: trimmedName })
+      .eq("id", roomId);
+    updateErr = fallbackRes.error;
+  }
+
+  if (updateErr) {
+    return { success: false, error: updateErr.message };
+  }
+
+  // Get updater username for system message
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .single();
+
+  const updaterName = (profile as { username?: string } | null)?.username || "방장";
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("messages") as any).insert({
+    room_id: roomId,
+    sender_id: user.id,
+    content: `${updaterName}님이 대화방 정보를 변경했습니다.`,
+    message_type: "SYSTEM",
+  });
+
+  revalidatePath(`/chat/${roomId}`);
+  revalidatePath("/chat");
+  return { success: true };
+}
