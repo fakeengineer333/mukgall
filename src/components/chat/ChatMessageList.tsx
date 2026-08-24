@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { Message, Profile } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/ui/avatar";
+import { updateLastReadAction } from "@/app/actions/chat";
 
 interface ChatMessageListProps {
   roomId: string;
@@ -20,6 +21,11 @@ export function ChatMessageList({
   const [messages, setMessages] = useState<(Message & { sender?: Profile | null })[]>(initialMessages);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const lastMsgTimeRef = useRef<string>(
+    initialMessages.length > 0
+      ? initialMessages[initialMessages.length - 1].created_at
+      : new Date().toISOString()
+  );
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -28,14 +34,109 @@ export function ChatMessageList({
 
   useEffect(() => {
     scrollToBottom();
+    if (messages.length > 0) {
+      lastMsgTimeRef.current = messages[messages.length - 1].created_at;
+    }
   }, [messages]);
 
-  // Supabase WebSocket Realtime Subscription
+  // Keep last_read_at updated on mount, unmount, and new messages
+  const markAsRead = useCallback(() => {
+    updateLastReadAction(roomId);
+  }, [roomId]);
+
+  useEffect(() => {
+    markAsRead();
+    return () => {
+      markAsRead();
+    };
+  }, [markAsRead]);
+
+  // Catch-up sync: fetch any messages created after latest known message
+  const syncNewMessages = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      const { data: latest } = await supabase
+        .from("messages")
+        .select("*, sender:profiles(*)")
+        .eq("room_id", roomId)
+        .gt("created_at", lastMsgTimeRef.current)
+        .order("created_at", { ascending: true });
+
+      if (latest && latest.length > 0) {
+        const typedLatest = latest as unknown as (Message & { sender?: Profile | null })[];
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const toAdd = typedLatest.filter((m) => !existingIds.has(m.id));
+          if (toAdd.length === 0) return prev;
+          return [...prev, ...toAdd];
+        });
+        markAsRead();
+      }
+    } catch (e) {
+      console.warn("[ChatMessageList] Catch-up sync error:", e);
+    }
+  }, [roomId, markAsRead]);
+
+  // Visibility / Focus listener for instant catch-up when switching back
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        syncNewMessages();
+        markAsRead();
+      }
+    };
+
+    window.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleVisibility);
+    return () => {
+      window.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleVisibility);
+    };
+  }, [syncNewMessages, markAsRead]);
+
+  // Periodic fast catch-up interval (every 3 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        syncNewMessages();
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [syncNewMessages]);
+
+  // Supabase WebSocket Realtime Subscription (Auth Token Set + Broadcast + Postgres Changes)
   useEffect(() => {
     const supabase = createClient();
 
+    // Authenticate Realtime socket with user's session JWT on load/refresh
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+    });
+
+    const addMessageSafely = (msg: Message & { sender?: Profile | null }) => {
+      if (!msg || !msg.id) return;
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+      markAsRead();
+    };
+
     const channel = supabase
-      .channel(`chat_messages_${roomId}_${Math.random().toString(36).slice(2)}`)
+      .channel(`chat_messages_${roomId}_${Math.random().toString(36).slice(2)}`, {
+        config: { broadcast: { self: true } },
+      })
+      // 1. Instant 0.001s bubble via Broadcast
+      .on("broadcast", { event: "NEW_MESSAGE" }, (payload) => {
+        const msg = payload.payload as Message & { sender?: Profile | null };
+        if (msg && msg.room_id === roomId) {
+          addMessageSafely(msg);
+        }
+      })
+      // 2. Durable Postgres Changes
       .on(
         "postgres_changes",
         {
@@ -56,11 +157,7 @@ export function ChatMessageList({
             .maybeSingle();
 
           const toAdd = (fullMsg as unknown as Message & { sender?: Profile | null }) || newMsg;
-
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === toAdd.id)) return prev;
-            return [...prev, toAdd];
-          });
+          addMessageSafely(toAdd);
         }
       )
       .subscribe();
@@ -68,7 +165,7 @@ export function ChatMessageList({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomId]);
+  }, [roomId, markAsRead]);
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5 overscroll-contain">

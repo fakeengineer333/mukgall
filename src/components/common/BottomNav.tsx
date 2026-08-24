@@ -79,11 +79,24 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
     }
   }, []);
 
-  // Recalculate unread count on pathname or user changes
+  // Recalculate unread count on pathname, user changes, back navigation, or focus
   useEffect(() => {
     if (currentUserId) {
       refreshUnreadCount(currentUserId);
     }
+
+    const handleRevisit = () => {
+      if (currentUserId) {
+        refreshUnreadCount(currentUserId);
+      }
+    };
+
+    window.addEventListener("focus", handleRevisit);
+    window.addEventListener("popstate", handleRevisit);
+    return () => {
+      window.removeEventListener("focus", handleRevisit);
+      window.removeEventListener("popstate", handleRevisit);
+    };
   }, [pathname, currentUserId, refreshUnreadCount]);
 
   // Single Realtime subscription for incoming messages & OS Notifications
@@ -91,6 +104,13 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
     if (!currentUserId) return;
 
     const supabase = createClient();
+
+    // Authenticate Realtime socket with user's session JWT on load/refresh
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+    });
 
     const handleIncomingMessage = (newMsg: {
       room_id?: string;

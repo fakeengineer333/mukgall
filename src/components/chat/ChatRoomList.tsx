@@ -30,9 +30,32 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
     setRooms(initialRooms);
   }, [initialRooms]);
 
+  // Refresh server state on back navigation or window focus
+  useEffect(() => {
+    router.refresh();
+
+    const handleRevisit = () => {
+      router.refresh();
+    };
+
+    window.addEventListener("focus", handleRevisit);
+    window.addEventListener("popstate", handleRevisit);
+    return () => {
+      window.removeEventListener("focus", handleRevisit);
+      window.removeEventListener("popstate", handleRevisit);
+    };
+  }, [router]);
+
   // Real-time subscription for Chat Room List updates
   useEffect(() => {
     const supabase = createClient();
+
+    // Authenticate Realtime socket with user's session JWT on load/refresh
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+    });
 
     // Helper to update room with new message
     const handleIncomingMessage = (newMsg: Message) => {

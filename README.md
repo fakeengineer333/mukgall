@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.5-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.6-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,14 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.1.6` (2026-08-25)
+- **⚡ 초기 진입 및 채팅방 새로고침 시 실시간 메시지 갱신 버그 완벽 해결**
+  - 새로고침 시 Supabase Realtime 웹소켓이 익명(`anon`) 상태로 연결되어 RLS에 의해 새 메시지가 드롭되던 현상 해결 (`supabase.realtime.setAuth` 토큰 즉시 바인딩)
+  - 0.001초 Instant Bubble 전달을 위한 룸 단위 Broadcast 및 3초 주기 자동 동기화(Catch-Up sync) 파이프라인 구축
+- **🔄 채팅방 퇴장 및 뒤로가기 시 읽지 않음 뱃지 잔여 이슈 해결**
+  - 대화방 진입 및 퇴장 시 `last_read_at` 갱신과 동시에 Next.js 캐시(`revalidatePath`) 무효화 적용
+  - 브라우저 뒤로가기(`popstate`) 및 탭 포커스(`focus`) 시 미확인 카운트 즉시 재계산 및 목록 자동 리프레시 연동
 
 ### `v0.1.5` (2026-08-25)
 - **🔔 Web Notification API 기반 OS 시스템 실시간 채팅 알림 도입**
