@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.8-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.9-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,16 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.1.9` (2026-08-25)
+- **📜 대화방 메시지 페이징(위로 스크롤 시 이전 대화 불러오기) 구현**
+  - 초기 진입 시 최신 30개 메시지만 우선 불러와 초기 렌더링 성능을 극대화
+  - 대화창 상단으로 스크롤 시 `fetchOlderMessagesAction`을 통해 이전 30개씩 부드럽게 무한 스크롤(Infinite Scroll Up) 로딩 및 스크롤 위치 유지
+- **📅 날짜 변경 시 'yyyy-MM-dd 요일' 구분선 배너 자동 삽입**
+  - 날짜가 바뀌는 시점마다 중앙에 깔끔한 날짜 구분선(`2026-08-25 화요일` 형식)을 렌더링하여 가독성 강화
+- **⏱️ 주기적 동기화 간격 최적화 & 대화방 목록 최신순 절대 정렬 보장**
+  - 자동 Catch-Up 주기 3초 ➜ 10초로 최적화하여 서버 부하 및 배터리 소모 대폭 경감
+  - 대화방 목록(`/chat`)에서 실시간/새로고침/첫 진입 모두 가장 최근 메시지가 있는 방이 무조건 최상단에 오도록 엄격 보장
 
 ### `v0.1.8` (2026-08-25)
 - **⚡ 대화방 목록 최신 메시지 순 정렬 및 새로고침 후 실시간 갱신 완벽 개선**

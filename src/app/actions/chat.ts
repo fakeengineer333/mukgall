@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/ratelimit";
-import { Profile } from "@/types";
+import { Profile, Message } from "@/types";
 
 export async function searchUsersAction(query: string): Promise<Profile[]> {
   const supabase = await createClient();
@@ -429,4 +429,42 @@ export async function updateChatRoomAction({
   revalidatePath(`/chat/${roomId}`);
   revalidatePath("/chat");
   return { success: true };
+}
+
+export async function fetchOlderMessagesAction({
+  roomId,
+  beforeTimestamp,
+  limit = 30,
+}: {
+  roomId: string;
+  beforeTimestamp: string;
+  limit?: number;
+}): Promise<(Message & { sender?: Profile | null })[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  // Fetch participant joined_at
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: myPart } = await (supabase.from("chat_participants") as any)
+    .select("joined_at")
+    .eq("room_id", roomId)
+    .eq("user_id", user.id)
+    .single();
+
+  const joinedAt = myPart?.joined_at || "1970-01-01T00:00:00Z";
+
+  const { data } = await supabase
+    .from("messages")
+    .select("*, sender:profiles(*)")
+    .eq("room_id", roomId)
+    .lt("created_at", beforeTimestamp)
+    .gte("created_at", joinedAt)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return ((data || []) as unknown as (Message & { sender?: Profile | null })[]).reverse();
 }

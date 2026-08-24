@@ -65,15 +65,16 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
     joined_at: p.joined_at,
   })) as (Profile & { joined_at?: string })[];
 
-  // 4. Fetch messages history
+  // 4. Fetch initial messages history (latest 30 messages)
   const { data: rawMessages } = await supabase
     .from("messages")
     .select("*, sender:profiles(*)")
     .eq("room_id", roomId)
     .gte("created_at", myParticipation.joined_at)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(30);
 
-  const initialMessages = (rawMessages || []) as unknown as (Message & { sender?: Profile | null })[];
+  const initialMessages = ((rawMessages || []) as unknown as (Message & { sender?: Profile | null })[]).reverse();
 
   // 5. Update last_read_at in background
   await updateLastReadAction(roomId);

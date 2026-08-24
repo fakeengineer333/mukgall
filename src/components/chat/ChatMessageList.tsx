@@ -2,15 +2,39 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
+import { Loader2 } from "lucide-react";
 import { Message, Profile } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/ui/avatar";
 import { useChat } from "@/providers/ChatProvider";
+import { fetchOlderMessagesAction } from "@/app/actions/chat";
 
 interface ChatMessageListProps {
   roomId: string;
   initialMessages: (Message & { sender?: Profile | null })[];
   currentUserId: string;
+}
+
+// Format: yyyy-MM-dd 요일 (예: 2026-08-25 화요일)
+function formatChatDateDivider(dateStr: string): string {
+  const d = new Date(dateStr);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const days = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+  const dayName = days[d.getDay()];
+  return `${yyyy}-${mm}-${dd} ${dayName}`;
+}
+
+function isDifferentCalendarDay(date1Str: string, date2Str?: string): boolean {
+  if (!date2Str) return true;
+  const d1 = new Date(date1Str);
+  const d2 = new Date(date2Str);
+  return (
+    d1.getFullYear() !== d2.getFullYear() ||
+    d1.getMonth() !== d2.getMonth() ||
+    d1.getDate() !== d2.getDate()
+  );
 }
 
 export function ChatMessageList({
@@ -20,21 +44,41 @@ export function ChatMessageList({
 }: ChatMessageListProps) {
   const { markRoomAsRead } = useChat();
   const [messages, setMessages] = useState<(Message & { sender?: Profile | null })[]>(initialMessages);
+  const [hasMore, setHasMore] = useState(initialMessages.length >= 30);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const isInitialMountRef = useRef(true);
+
   const lastMsgTimeRef = useRef<string>(
     initialMessages.length > 0
       ? initialMessages[initialMessages.length - 1].created_at
       : new Date().toISOString()
   );
 
-  // Auto scroll to bottom
+  // Auto scroll to bottom on new incoming messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (isInitialMountRef.current) {
+      // First mount -> scroll instantly to bottom
+      messagesEndRef.current?.scrollIntoView();
+      isInitialMountRef.current = false;
+    } else {
+      // Only smooth scroll if near bottom
+      const container = scrollContainerRef.current;
+      if (container) {
+        const isNearBottom =
+          container.scrollHeight - container.scrollTop - container.clientHeight < 250;
+        if (isNearBottom) {
+          scrollToBottom();
+        }
+      }
+    }
+
     if (messages.length > 0) {
       lastMsgTimeRef.current = messages[messages.length - 1].created_at;
     }
@@ -47,6 +91,55 @@ export function ChatMessageList({
       markRoomAsRead(roomId);
     };
   }, [roomId, markRoomAsRead]);
+
+  // Load older messages when scrolling to top
+  const loadOlderMessages = useCallback(async () => {
+    if (loadingOlder || !hasMore || messages.length === 0) return;
+
+    setLoadingOlder(true);
+    const container = scrollContainerRef.current;
+    const prevScrollHeight = container ? container.scrollHeight : 0;
+    const prevScrollTop = container ? container.scrollTop : 0;
+
+    try {
+      const oldestMsg = messages[0];
+      const older = await fetchOlderMessagesAction({
+        roomId,
+        beforeTimestamp: oldestMsg.created_at,
+        limit: 30,
+      });
+
+      if (older.length < 30) {
+        setHasMore(false);
+      }
+
+      if (older.length > 0) {
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const toAdd = older.filter((m) => !existingIds.has(m.id));
+          return [...toAdd, ...prev];
+        });
+
+        // Maintain relative scroll position to avoid jump
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight - prevScrollHeight + prevScrollTop;
+          }
+        });
+      }
+    } catch (e) {
+      console.warn("[ChatMessageList] Load older messages failed:", e);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [loadingOlder, hasMore, messages, roomId]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    if (target.scrollTop < 60 && hasMore && !loadingOlder) {
+      loadOlderMessages();
+    }
+  };
 
   // Catch-up sync: fetch any messages created after latest known message
   const syncNewMessages = useCallback(async () => {
@@ -91,13 +184,13 @@ export function ChatMessageList({
     };
   }, [syncNewMessages, roomId, markRoomAsRead]);
 
-  // Periodic fast catch-up interval (every 3 seconds)
+  // Periodic catch-up interval (every 10 seconds)
   useEffect(() => {
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") {
         syncNewMessages();
       }
-    }, 3000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [syncNewMessages]);
@@ -165,15 +258,51 @@ export function ChatMessageList({
   }, [roomId, markRoomAsRead]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5 overscroll-contain">
-      {messages.map((msg) => {
+    <div
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+      className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5 overscroll-contain"
+    >
+      {/* Loading Spinner / Load More Trigger at top */}
+      {hasMore && (
+        <div className="flex justify-center py-2">
+          {loadingOlder ? (
+            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+              <span>이전 대화 불러오는 중...</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={loadOlderMessages}
+              className="rounded-full bg-zinc-900 border border-zinc-800 px-3 py-1 text-[11px] font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+            >
+              이전 대화 더보기
+            </button>
+          )}
+        </div>
+      )}
+
+      {messages.map((msg, index) => {
+        const prevMsg = index > 0 ? messages[index - 1] : undefined;
+        const showDateDivider = isDifferentCalendarDay(msg.created_at, prevMsg?.created_at);
+
         // 1. SYSTEM MESSAGE
         if (msg.message_type === "SYSTEM") {
           return (
-            <div key={msg.id} className="flex justify-center my-3">
-              <span className="rounded-full bg-zinc-900 border border-zinc-800/80 px-3 py-1 text-[11px] font-medium text-zinc-400 shadow-sm">
-                {msg.content}
-              </span>
+            <div key={msg.id} className="space-y-3">
+              {showDateDivider && (
+                <div className="flex justify-center my-4">
+                  <span className="rounded-full bg-zinc-900/90 border border-zinc-800/80 px-3.5 py-1 text-[11px] font-semibold text-zinc-400 shadow-sm">
+                    {formatChatDateDivider(msg.created_at)}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-center my-3">
+                <span className="rounded-full bg-zinc-900 border border-zinc-800/80 px-3 py-1 text-[11px] font-medium text-zinc-400 shadow-sm">
+                  {msg.content}
+                </span>
+              </div>
             </div>
           );
         }
@@ -181,68 +310,78 @@ export function ChatMessageList({
         const isMe = msg.sender_id === currentUserId;
 
         return (
-          <div
-            key={msg.id}
-            className={`flex items-end gap-2 ${isMe ? "justify-end" : "justify-start"}`}
-          >
-            {/* Other User Avatar */}
-            {!isMe && (
-              <Avatar
-                src={msg.sender?.avatar_url}
-                fallbackText={msg.sender?.username || "유저"}
-                size="sm"
-                className="h-7 w-7 mb-0.5"
-              />
+          <div key={msg.id} className="space-y-3">
+            {/* Date Divider between different calendar days */}
+            {showDateDivider && (
+              <div className="flex justify-center my-4">
+                <span className="rounded-full bg-zinc-900/90 border border-zinc-800/80 px-3.5 py-1 text-[11px] font-semibold text-zinc-400 shadow-sm">
+                  {formatChatDateDivider(msg.created_at)}
+                </span>
+              </div>
             )}
 
-            {/* Bubble & Time wrapper */}
             <div
-              className={`flex flex-col max-w-[78%] sm:max-w-[65%] ${
-                isMe ? "items-end" : "items-start"
-              }`}
+              className={`flex items-end gap-2 ${isMe ? "justify-end" : "justify-start"}`}
             >
-              {/* Sender Name if not me */}
+              {/* Other User Avatar */}
               {!isMe && (
-                <span className="text-[11px] text-zinc-400 font-semibold mb-1 pl-1">
-                  {msg.sender?.username || "대화 상대"}
-                </span>
+                <Avatar
+                  src={msg.sender?.avatar_url}
+                  fallbackText={msg.sender?.username || "유저"}
+                  size="sm"
+                  className="h-7 w-7 mb-0.5"
+                />
               )}
 
-              {/* Message Bubble */}
+              {/* Bubble & Time wrapper */}
               <div
-                className={`rounded-2xl px-4 py-2.5 shadow-md text-xs sm:text-sm leading-relaxed ${
-                  isMe
-                    ? "bg-blue-600 text-white rounded-br-none"
-                    : "bg-zinc-800 text-zinc-100 rounded-bl-none border border-zinc-700/50"
+                className={`flex flex-col max-w-[78%] sm:max-w-[65%] ${
+                  isMe ? "items-end" : "items-start"
                 }`}
               >
-                {/* Image attachment */}
-                {msg.image_url && (
-                  <div
-                    className="relative aspect-video w-48 sm:w-60 rounded-xl overflow-hidden mb-1.5 cursor-pointer bg-zinc-950"
-                    onClick={() => setPreviewImage(msg.image_url)}
-                  >
-                    <Image
-                      src={msg.image_url}
-                      alt="Chat Attachment"
-                      fill
-                      sizes="240px"
-                      className="object-cover hover:scale-105 transition-transform"
-                    />
-                  </div>
+                {/* Sender Name if not me */}
+                {!isMe && (
+                  <span className="text-[11px] text-zinc-400 font-semibold mb-1 pl-1">
+                    {msg.sender?.username || "대화 상대"}
+                  </span>
                 )}
 
-                {/* Text content */}
-                {msg.content && <p className="whitespace-pre-wrap break-words">{msg.content}</p>}
-              </div>
+                {/* Message Bubble */}
+                <div
+                  className={`rounded-2xl px-4 py-2.5 shadow-md text-xs sm:text-sm leading-relaxed ${
+                    isMe
+                      ? "bg-blue-600 text-white rounded-br-none"
+                      : "bg-zinc-800 text-zinc-100 rounded-bl-none border border-zinc-700/50"
+                  }`}
+                >
+                  {/* Image attachment */}
+                  {msg.image_url && (
+                    <div
+                      className="relative aspect-video w-48 sm:w-60 rounded-xl overflow-hidden mb-1.5 cursor-pointer bg-zinc-950"
+                      onClick={() => setPreviewImage(msg.image_url)}
+                    >
+                      <Image
+                        src={msg.image_url}
+                        alt="Chat Attachment"
+                        fill
+                        sizes="240px"
+                        className="object-cover hover:scale-105 transition-transform"
+                      />
+                    </div>
+                  )}
 
-              {/* Timestamp */}
-              <span className="text-[10px] text-zinc-500 mt-1 px-1">
-                {new Date(msg.created_at).toLocaleTimeString("ko-KR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
+                  {/* Text content */}
+                  {msg.content && <p className="whitespace-pre-wrap break-words">{msg.content}</p>}
+                </div>
+
+                {/* Timestamp */}
+                <span className="text-[10px] text-zinc-500 mt-1 px-1">
+                  {new Date(msg.created_at).toLocaleTimeString("ko-KR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
             </div>
           </div>
         );

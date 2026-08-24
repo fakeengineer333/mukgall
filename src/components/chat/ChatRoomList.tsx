@@ -78,7 +78,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
       if (document.visibilityState === "visible") {
         router.refresh();
       }
-    }, 3000);
+    }, 10000);
 
     return () => {
       window.removeEventListener("focus", handleRevisit);
