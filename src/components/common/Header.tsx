@@ -18,13 +18,31 @@ export function Header({ userProfile }: HeaderProps) {
 
   if (isAuthPage) return null;
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (pathname === "/") {
+      e.preventDefault();
+      window.history.pushState(null, "", "/");
+      window.dispatchEvent(new CustomEvent("app:switch-tab", { detail: "gallery" }));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleMyPageClick = (e: React.MouseEvent) => {
+    if (pathname === "/") {
+      e.preventDefault();
+      window.history.pushState(null, "", "/?view=mypage");
+      window.dispatchEvent(new CustomEvent("app:switch-tab", { detail: "mypage" }));
+    }
+  };
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md transition-colors">
       <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4 sm:px-6">
-        {/* Brand Logo & Title */}
+        {/* Brand Logo & Title (Click to return directly to Gallery Tab) */}
         <Link
           href="/"
-          className="group flex items-center gap-2.5 font-black tracking-tight text-zinc-900 dark:text-zinc-50"
+          onClick={handleLogoClick}
+          className="group flex items-center gap-2.5 font-black tracking-tight text-zinc-900 dark:text-zinc-50 select-none cursor-pointer"
         >
           <Image
             src="/icons/icon-192.png"
@@ -54,7 +72,8 @@ export function Header({ userProfile }: HeaderProps) {
               )}
               <Link
                 href="/mypage"
-                className="flex items-center gap-2 rounded-full p-0.5 hover:ring-2 hover:ring-blue-500 transition-all"
+                onClick={handleMyPageClick}
+                className="flex items-center gap-2 rounded-full p-0.5 hover:ring-2 hover:ring-blue-500 transition-all select-none cursor-pointer"
               >
                 <Avatar
                   src={userProfile.avatar_url}

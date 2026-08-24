@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.1-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,11 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.3.1` (2026-08-25)
+- **🏠 상단 헤더 로고 및 로그인/회원가입 아이콘 클릭 시 메인 갤러리 탭 즉시 이동 연동**
+  - 상단 헤더의 '묵호 갤러리' 로고 클릭 시 어떤 화면/탭에서든 메인 화면의 **갤러리 탭**으로 0.000초 즉시 전환 및 상단 스크롤 복귀 지원
+  - 로그인 / 회원가입 / 이메일 인증 화면의 로고 아이콘 클릭 시에도 메인 갤러리 탭으로 자연스럽게 복귀하도록 통일
 
 ### `v0.3.0` (2026-08-25)
 - **🚀 하이브리드 고속 탭 전환 (Hybrid Instant Tab Switching & Keep-Alive) 시스템 구축**
