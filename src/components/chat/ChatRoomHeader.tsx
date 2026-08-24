@@ -57,7 +57,7 @@ export function ChatRoomHeader({
     const supabase = createClient();
 
     const channel = supabase
-      .channel(`room_meta_${room.id}`)
+      .channel(`room_meta_${room.id}_${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {

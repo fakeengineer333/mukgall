@@ -30,14 +30,12 @@ export function ChatMessageList({
     scrollToBottom();
   }, [messages]);
 
-  // Supabase WebSocket Realtime Subscription (Dual-Channel: Broadcast + Postgres Changes)
+  // Supabase WebSocket Realtime Subscription
   useEffect(() => {
     const supabase = createClient();
 
     const channel = supabase
-      .channel(`chat_room_${roomId}`, {
-        config: { broadcast: { self: true } },
-      })
+      .channel(`chat_messages_${roomId}_${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
@@ -65,15 +63,6 @@ export function ChatMessageList({
           });
         }
       )
-      .on("broadcast", { event: "NEW_MESSAGE" }, (payload) => {
-        const msg = payload.payload as Message & { sender?: Profile | null };
-        if (!msg || !msg.id) return;
-
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === msg.id)) return prev;
-          return [...prev, msg];
-        });
-      })
       .subscribe();
 
     return () => {

@@ -59,17 +59,9 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
       });
     };
 
-    // 1. Dual-Channel: Listen for new messages across rooms (Broadcast + Postgres Changes)
-    const globalChannel = supabase
-      .channel("global_chat_sync", {
-        config: { broadcast: { self: true } },
-      })
-      .on("broadcast", { event: "NEW_MESSAGE" }, (payload) => {
-        const data = payload.payload as { roomId?: string; message?: Message };
-        if (data?.message) {
-          handleIncomingMessage(data.message);
-        }
-      })
+    // Single isolated channel with unique ID to avoid collision with BottomNav or other components
+    const channel = supabase
+      .channel(`chatroom_list_${currentUserId}_${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
@@ -84,11 +76,6 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
           }
         }
       )
-      .subscribe();
-
-    // 2. Listen for new chat room participants (new chat invites)
-    const participantChannel = supabase
-      .channel("chat_rooms_participant_sync")
       .on(
         "postgres_changes",
         {
@@ -101,11 +88,6 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
           router.refresh();
         }
       )
-      .subscribe();
-
-    // 3. Listen for chat room metadata updates (title, avatar changes)
-    const roomUpdateChannel = supabase
-      .channel("chat_rooms_metadata_sync")
       .on(
         "postgres_changes",
         {
@@ -136,9 +118,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
       .subscribe();
 
     return () => {
-      supabase.removeChannel(globalChannel);
-      supabase.removeChannel(participantChannel);
-      supabase.removeChannel(roomUpdateChannel);
+      supabase.removeChannel(channel);
     };
   }, [currentUserId, router]);
 

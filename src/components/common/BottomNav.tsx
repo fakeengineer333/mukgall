@@ -119,24 +119,9 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
       });
     };
 
+    // Isolated channel for BottomNav to avoid collisions with any other components
     const channel = supabase
-      .channel("global_chat_sync", {
-        config: { broadcast: { self: true } },
-      })
-      .on("broadcast", { event: "NEW_MESSAGE" }, (payload) => {
-        const data = payload.payload as {
-          roomId?: string;
-          message?: {
-            room_id?: string;
-            sender_id?: string;
-            content?: string;
-            sender?: { username?: string };
-          };
-        };
-        if (data?.message) {
-          handleIncomingMessage(data.message);
-        }
-      })
+      .channel(`bottom_nav_${currentUserId}_${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
@@ -144,15 +129,32 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
           schema: "public",
           table: "messages",
         },
-        (payload) => {
+        async (payload) => {
           const newMsg = payload.new as {
+            id?: string;
             room_id?: string;
             sender_id?: string;
             content?: string;
           };
-          if (newMsg) {
-            handleIncomingMessage(newMsg);
+          if (!newMsg || !newMsg.room_id || newMsg.sender_id === currentUserId) return;
+
+          // Fetch sender username for notification
+          let senderUsername = "새 메시지";
+          if (newMsg.sender_id) {
+            const { data: senderProf } = await supabase
+              .from("profiles")
+              .select("username")
+              .eq("id", newMsg.sender_id)
+              .maybeSingle();
+            if (senderProf && (senderProf as any).username) {
+              senderUsername = (senderProf as any).username;
+            }
           }
+
+          handleIncomingMessage({
+            ...newMsg,
+            sender: { username: senderUsername },
+          });
         }
       )
       .subscribe();

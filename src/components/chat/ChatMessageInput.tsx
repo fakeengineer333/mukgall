@@ -56,42 +56,12 @@ export function ChatMessageInput({ roomId }: ChatMessageInputProps) {
     setImagePreview(null);
 
     startTransition(async () => {
-      const res = (await sendMessageAction({
+      await sendMessageAction({
         roomId,
         content: textToSend || (imageToSend ? "" : undefined),
         imageUrl: imageToSend,
         messageType: msgType,
-      })) as any;
-
-      if (res?.success && res.message) {
-        const supabase = createClient();
-        
-        const sendBroadcast = (channelName: string, event: string, payload: any) => {
-          try {
-            const ch = supabase.channel(channelName);
-            if (ch.state === "joined") {
-              ch.send({ type: "broadcast", event, payload });
-            } else {
-              ch.subscribe((status) => {
-                if (status === "SUBSCRIBED") {
-                  ch.send({ type: "broadcast", event, payload });
-                }
-              });
-            }
-          } catch (e) {
-            console.warn(`[Broadcast] ${channelName} send skipped:`, e);
-          }
-        };
-
-        // 1. Room specific broadcast (0.001s instant bubble in chat room)
-        sendBroadcast(`chat_room_${roomId}`, "NEW_MESSAGE", res.message);
-
-        // 2. Global chat sync broadcast (0.001s instant update in ChatRoomList & BottomNav)
-        sendBroadcast("global_chat_sync", "NEW_MESSAGE", {
-          roomId,
-          message: res.message,
-        });
-      }
+      });
     });
   };
 
