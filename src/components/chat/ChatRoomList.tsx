@@ -62,7 +62,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
     });
   }, [latestMessage, router]);
 
-  // Periodic catch-up refresh every 3 seconds and on window focus/popstate
+  // Catch-up refresh on window focus, popstate, or visibility change
   useEffect(() => {
     const handleRevisit = () => {
       if (document.visibilityState === "visible") {
@@ -74,17 +74,10 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
     window.addEventListener("popstate", handleRevisit);
     window.addEventListener("visibilitychange", handleRevisit);
 
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        router.refresh();
-      }
-    }, 10000);
-
     return () => {
       window.removeEventListener("focus", handleRevisit);
       window.removeEventListener("popstate", handleRevisit);
       window.removeEventListener("visibilitychange", handleRevisit);
-      clearInterval(interval);
     };
   }, [router]);
 

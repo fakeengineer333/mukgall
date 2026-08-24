@@ -56,14 +56,22 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
   // 3. Fetch all active participants
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawParticipants } = await (supabase.from("chat_participants") as any)
-    .select("joined_at, profile:profiles(*)")
+    .select("user_id, last_read_at, joined_at, profile:profiles(*)")
     .eq("room_id", roomId)
     .is("left_at", null);
 
   const participants = (rawParticipants || []).map((p: any) => ({
     ...p.profile,
+    id: p.user_id,
+    user_id: p.user_id,
+    last_read_at: p.last_read_at,
     joined_at: p.joined_at,
   })) as (Profile & { joined_at?: string })[];
+
+  const initialParticipants = (rawParticipants || []).map((p: any) => ({
+    user_id: p.user_id as string,
+    last_read_at: (p.last_read_at || p.joined_at || "1970-01-01T00:00:00Z") as string,
+  }));
 
   // 4. Fetch initial messages history (latest 30 messages)
   const { data: rawMessages } = await supabase
@@ -90,6 +98,7 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
       <ChatMessageList
         roomId={roomId}
         initialMessages={initialMessages}
+        initialParticipants={initialParticipants}
         currentUserId={user.id}
       />
 

@@ -9,9 +9,15 @@ import { Avatar } from "@/components/ui/avatar";
 import { useChat } from "@/providers/ChatProvider";
 import { fetchOlderMessagesAction } from "@/app/actions/chat";
 
+interface ParticipantReadInfo {
+  user_id: string;
+  last_read_at: string;
+}
+
 interface ChatMessageListProps {
   roomId: string;
   initialMessages: (Message & { sender?: Profile | null })[];
+  initialParticipants?: ParticipantReadInfo[];
   currentUserId: string;
 }
 
@@ -40,10 +46,12 @@ function isDifferentCalendarDay(date1Str: string, date2Str?: string): boolean {
 export function ChatMessageList({
   roomId,
   initialMessages,
+  initialParticipants = [],
   currentUserId,
 }: ChatMessageListProps) {
   const { markRoomAsRead } = useChat();
   const [messages, setMessages] = useState<(Message & { sender?: Profile | null })[]>(initialMessages);
+  const [participants, setParticipants] = useState<ParticipantReadInfo[]>(initialParticipants);
   const [hasMore, setHasMore] = useState(initialMessages.length >= 30);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -56,6 +64,11 @@ export function ChatMessageList({
       ? initialMessages[initialMessages.length - 1].created_at
       : new Date().toISOString()
   );
+
+  // Sync initialParticipants if updated
+  useEffect(() => {
+    setParticipants(initialParticipants);
+  }, [initialParticipants]);
 
   // Auto scroll to bottom on new incoming messages
   const scrollToBottom = () => {
@@ -91,6 +104,22 @@ export function ChatMessageList({
       markRoomAsRead(roomId);
     };
   }, [roomId, markRoomAsRead]);
+
+  // Calculate unread count for each message (KakaoTalk style '1' disappearing)
+  const getMessageUnreadCount = useCallback(
+    (msg: Message) => {
+      if (!msg.created_at || participants.length === 0) return 0;
+      const msgTime = new Date(msg.created_at).getTime();
+
+      // Count participants who haven't read this message yet (excluding the sender)
+      return participants.filter(
+        (p) =>
+          p.user_id !== msg.sender_id &&
+          new Date(p.last_read_at || 0).getTime() < msgTime
+      ).length;
+    },
+    [participants]
+  );
 
   // Load older messages when scrolling to top
   const loadOlderMessages = useCallback(async () => {
@@ -184,18 +213,7 @@ export function ChatMessageList({
     };
   }, [syncNewMessages, roomId, markRoomAsRead]);
 
-  // Periodic catch-up interval (every 10 seconds)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        syncNewMessages();
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [syncNewMessages]);
-
-  // Supabase WebSocket Realtime Subscription (Auth Token Set + Broadcast + Postgres Changes)
+  // Supabase WebSocket Realtime Subscription (Messages + Participant Read Updates)
   useEffect(() => {
     const supabase = createClient();
 
@@ -216,7 +234,7 @@ export function ChatMessageList({
     };
 
     const channel = supabase
-      .channel(`chat_messages_${roomId}_${Math.random().toString(36).slice(2)}`, {
+      .channel(`chat_room_view_${roomId}_${Math.random().toString(36).slice(2)}`, {
         config: { broadcast: { self: true } },
       })
       // 1. Instant 0.001s bubble via Broadcast
@@ -226,7 +244,7 @@ export function ChatMessageList({
           addMessageSafely(msg);
         }
       })
-      // 2. Durable Postgres Changes
+      // 2. Durable Postgres Changes on Messages
       .on(
         "postgres_changes",
         {
@@ -248,6 +266,28 @@ export function ChatMessageList({
 
           const toAdd = (fullMsg as unknown as Message & { sender?: Profile | null }) || newMsg;
           addMessageSafely(toAdd);
+        }
+      )
+      // 3. Real-time Read Receipt updates (when other participants read)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_participants",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          const updated = payload.new as { user_id: string; last_read_at: string };
+          if (updated?.user_id && updated?.last_read_at) {
+            setParticipants((prev) =>
+              prev.map((p) =>
+                p.user_id === updated.user_id
+                  ? { ...p, last_read_at: updated.last_read_at }
+                  : p
+              )
+            );
+          }
         }
       )
       .subscribe();
@@ -286,6 +326,7 @@ export function ChatMessageList({
       {messages.map((msg, index) => {
         const prevMsg = index > 0 ? messages[index - 1] : undefined;
         const showDateDivider = isDifferentCalendarDay(msg.created_at, prevMsg?.created_at);
+        const unreadCount = getMessageUnreadCount(msg);
 
         // 1. SYSTEM MESSAGE
         if (msg.message_type === "SYSTEM") {
@@ -320,40 +361,26 @@ export function ChatMessageList({
               </div>
             )}
 
-            <div
-              className={`flex items-end gap-2 ${isMe ? "justify-end" : "justify-start"}`}
-            >
-              {/* Other User Avatar */}
-              {!isMe && (
-                <Avatar
-                  src={msg.sender?.avatar_url}
-                  fallbackText={msg.sender?.username || "유저"}
-                  size="sm"
-                  className="h-7 w-7 mb-0.5"
-                />
-              )}
-
-              {/* Bubble & Time wrapper */}
-              <div
-                className={`flex flex-col max-w-[78%] sm:max-w-[65%] ${
-                  isMe ? "items-end" : "items-start"
-                }`}
-              >
-                {/* Sender Name if not me */}
-                {!isMe && (
-                  <span className="text-[11px] text-zinc-400 font-semibold mb-1 pl-1">
-                    {msg.sender?.username || "대화 상대"}
+            {isMe ? (
+              /* MY MESSAGE (Right-aligned) */
+              <div className="flex items-end justify-end gap-1.5">
+                {/* Unread Count '1' & Timestamp */}
+                <div className="flex flex-col items-end shrink-0 mb-0.5 select-none">
+                  {unreadCount > 0 && (
+                    <span className="text-[10px] font-bold text-amber-400 dark:text-yellow-400 leading-none mb-0.5">
+                      {unreadCount}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-zinc-500 leading-none">
+                    {new Date(msg.created_at).toLocaleTimeString("ko-KR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
-                )}
+                </div>
 
                 {/* Message Bubble */}
-                <div
-                  className={`rounded-2xl px-4 py-2.5 shadow-md text-xs sm:text-sm leading-relaxed ${
-                    isMe
-                      ? "bg-blue-600 text-white rounded-br-none"
-                      : "bg-zinc-800 text-zinc-100 rounded-bl-none border border-zinc-700/50"
-                  }`}
-                >
+                <div className="max-w-[78%] sm:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-md text-xs sm:text-sm leading-relaxed bg-blue-600 text-white rounded-br-none">
                   {/* Image attachment */}
                   {msg.image_url && (
                     <div
@@ -373,16 +400,64 @@ export function ChatMessageList({
                   {/* Text content */}
                   {msg.content && <p className="whitespace-pre-wrap break-words">{msg.content}</p>}
                 </div>
-
-                {/* Timestamp */}
-                <span className="text-[10px] text-zinc-500 mt-1 px-1">
-                  {new Date(msg.created_at).toLocaleTimeString("ko-KR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
               </div>
-            </div>
+            ) : (
+              /* OTHER USER MESSAGE (Left-aligned) */
+              <div className="flex items-start gap-2 justify-start">
+                <Avatar
+                  src={msg.sender?.avatar_url}
+                  fallbackText={msg.sender?.username || "유저"}
+                  size="sm"
+                  className="h-7 w-7 mt-0.5"
+                />
+
+                <div className="flex flex-col max-w-[78%] sm:max-w-[65%] items-start">
+                  {/* Sender Name */}
+                  <span className="text-[11px] text-zinc-400 font-semibold mb-1 pl-1">
+                    {msg.sender?.username || "대화 상대"}
+                  </span>
+
+                  <div className="flex items-end gap-1.5">
+                    {/* Message Bubble */}
+                    <div className="rounded-2xl px-4 py-2.5 shadow-md text-xs sm:text-sm leading-relaxed bg-zinc-800 text-zinc-100 rounded-bl-none border border-zinc-700/50">
+                      {/* Image attachment */}
+                      {msg.image_url && (
+                        <div
+                          className="relative aspect-video w-48 sm:w-60 rounded-xl overflow-hidden mb-1.5 cursor-pointer bg-zinc-950"
+                          onClick={() => setPreviewImage(msg.image_url)}
+                        >
+                          <Image
+                            src={msg.image_url}
+                            alt="Chat Attachment"
+                            fill
+                            sizes="240px"
+                            className="object-cover hover:scale-105 transition-transform"
+                          />
+                        </div>
+                      )}
+
+                      {/* Text content */}
+                      {msg.content && <p className="whitespace-pre-wrap break-words">{msg.content}</p>}
+                    </div>
+
+                    {/* Unread Count '1' & Timestamp */}
+                    <div className="flex flex-col items-start shrink-0 mb-0.5 select-none">
+                      {unreadCount > 0 && (
+                        <span className="text-[10px] font-bold text-amber-400 dark:text-yellow-400 leading-none mb-0.5">
+                          {unreadCount}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-zinc-500 leading-none">
+                        {new Date(msg.created_at).toLocaleTimeString("ko-KR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
       })}

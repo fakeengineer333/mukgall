@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.9-blue.svg)
+![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,12 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.2.0` (2026-08-25)
+- **👀 카카오톡 스타일 실시간 '1' 읽음 확인(Read Receipt) 시스템 탑재**
+  - 내가 보낸 메시지 옆에 노란색 숫자 `1`이 표시되며, 상대방이 대화방에 입장하여 메시지를 읽는 순간 웹소켓을 통해 실시간으로 `1`이 즉시 사라지도록 구현
+  - 그룹 대화방에서는 아직 읽지 않은 참여자 수가 카운팅되며, 참여자별 `last_read_at` 갱신에 따라 실시간 감소
+  - 불필요한 주기적 폴링(`setInterval`)을 완전히 걷어내고 순수 실시간 이벤트 기반으로 최적화
 
 ### `v0.1.9` (2026-08-25)
 - **📜 대화방 메시지 페이징(위로 스크롤 시 이전 대화 불러오기) 구현**
