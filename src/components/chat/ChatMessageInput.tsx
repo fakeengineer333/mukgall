@@ -5,14 +5,20 @@ import { Send, ImagePlus, Loader2, X } from "lucide-react";
 import Image from "next/image";
 import { sendMessageAction } from "@/app/actions/chat";
 import { uploadImageToStorage } from "@/lib/storage";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Profile } from "@/types";
 
 interface ChatMessageInputProps {
   roomId: string;
+  currentUserId?: string;
+  currentUserProfile?: Profile | null;
 }
 
-export function ChatMessageInput({ roomId }: ChatMessageInputProps) {
+export function ChatMessageInput({
+  roomId,
+  currentUserId,
+  currentUserProfile,
+}: ChatMessageInputProps) {
   const [content, setContent] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -30,7 +36,7 @@ export function ChatMessageInput({ roomId }: ChatMessageInputProps) {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!content.trim() && !selectedImage) || isPending || uploading) return;
+    if ((!content.trim() && !selectedImage) || uploading) return;
 
     let imageUrl: string | undefined = undefined;
 
@@ -50,18 +56,57 @@ export function ChatMessageInput({ roomId }: ChatMessageInputProps) {
     const textToSend = content.trim();
     const imageToSend = imageUrl;
     const msgType = imageToSend ? "IMAGE" : "TEXT";
+    const tempId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+    // ⚡ 0.000s INSTANT OPTIMISTIC UI DISPATCH (KakaoTalk / Discord Speed)
+    if (typeof window !== "undefined" && (textToSend || imageToSend)) {
+      const optimisticMsg = {
+        id: tempId,
+        room_id: roomId,
+        sender_id: currentUserId || "",
+        content: textToSend || null,
+        image_url: imageToSend || imagePreview || null,
+        message_type: msgType,
+        created_at: new Date().toISOString(),
+        sender: currentUserProfile || {
+          id: currentUserId || "",
+          username: "나",
+          avatar_url: null,
+          role: "USER" as const,
+          bio: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      };
+
+      window.dispatchEvent(
+        new CustomEvent(`chat:send-optimistic-${roomId}`, {
+          detail: optimisticMsg,
+        })
+      );
+    }
+
+    // Clear input field instantly (0ms delay for continuous typing)
     setContent("");
     setSelectedImage(null);
     setImagePreview(null);
 
+    // Background server action
     startTransition(async () => {
-      await sendMessageAction({
+      const res = (await sendMessageAction({
         roomId,
         content: textToSend || (imageToSend ? "" : undefined),
         imageUrl: imageToSend,
         messageType: msgType,
-      });
+      })) as any;
+
+      if (!res?.success) {
+        window.dispatchEvent(
+          new CustomEvent(`chat:send-failed-${roomId}`, {
+            detail: { id: tempId, error: res?.error },
+          })
+        );
+      }
     });
   };
 
@@ -88,48 +133,43 @@ export function ChatMessageInput({ roomId }: ChatMessageInputProps) {
       )}
 
       <form onSubmit={handleSend} className="flex items-center gap-2">
-        {/* Image Attachment Button */}
-        <label
-          htmlFor="chat-image-input"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white cursor-pointer transition-colors"
-        >
-          {uploading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-          ) : (
-            <ImagePlus className="h-5 w-5" />
-          )}
-        </label>
+        {/* Hidden File Input for Images */}
         <input
-          id="chat-image-input"
           type="file"
+          id="chat-image-input"
           accept="image/*"
           className="hidden"
           onChange={handleImageSelect}
-          disabled={isPending || uploading}
+          disabled={uploading}
         />
 
-        {/* Text Input */}
+        <label
+          htmlFor="chat-image-input"
+          className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+        >
+          {uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+          ) : (
+            <ImagePlus className="h-4 w-4" />
+          )}
+        </label>
+
         <input
           type="text"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="메시지를 입력하세요..."
-          disabled={isPending || uploading}
-          className="flex-1 h-11 rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+          className="h-10 flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          autoComplete="off"
         />
 
-        {/* Send Button */}
         <Button
           type="submit"
-          disabled={(!content.trim() && !selectedImage) || isPending || uploading}
-          className="h-11 px-4 rounded-xl font-bold gap-1.5 shadow-md shadow-blue-600/30"
+          size="sm"
+          disabled={(!content.trim() && !selectedImage) || uploading}
+          className="h-10 px-3.5 font-bold shadow-md shadow-blue-600/20 bg-blue-600 hover:bg-blue-700 text-white"
         >
-          {isPending || uploading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-          <span className="hidden sm:inline">전송</span>
+          <Send className="h-4 w-4" />
         </Button>
       </form>
     </div>

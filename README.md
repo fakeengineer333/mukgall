@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.2.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.2.3-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,12 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.2.3` (2026-08-25)
+- **⚡ 0.000초 즉시 전송 낙관적 UI (Optimistic UI) 메신저 시스템 탑재**
+  - 엔터/전송 버튼을 누르는 순간 0.000ms 즉시 화면에 말풍선을 렌더링하고 입력창을 비워 카카오톡/텔레그램급 물 흐르는 연속 타이핑 지원
+  - 서버 저장은 백그라운드 비동기로 처리되며, 데이터베이스 확정 시 부드럽게 실제 ID로 무지연 매칭 Reconcile
+  - 실시간 수신 시 참여자 프로필 메모리 캐시 패스트패스를 적용하여 추가 HTTP 요청 없이 광속 렌더링
 
 ### `v0.2.2` (2026-08-25)
 - **💬 푸시 알림 우측 아이콘에 채팅방/보낸 사람 아바타 아이콘 적용**

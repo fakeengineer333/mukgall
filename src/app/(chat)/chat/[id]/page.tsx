@@ -84,7 +84,10 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
 
   const initialMessages = ((rawMessages || []) as unknown as (Message & { sender?: Profile | null })[]).reverse();
 
-  // 5. Update last_read_at in background
+  // 5. Find current user's profile
+  const currentUserProfile = participants.find((p) => p.id === user.id) || null;
+
+  // 6. Update last_read_at in background
   await updateLastReadAction(roomId);
 
   return (
@@ -100,9 +103,14 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
         initialMessages={initialMessages}
         initialParticipants={initialParticipants}
         currentUserId={user.id}
+        currentUserProfile={currentUserProfile}
       />
 
-      <ChatMessageInput roomId={roomId} />
+      <ChatMessageInput
+        roomId={roomId}
+        currentUserId={user.id}
+        currentUserProfile={currentUserProfile}
+      />
     </div>
   );
 }

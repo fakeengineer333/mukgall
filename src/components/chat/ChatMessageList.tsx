@@ -12,6 +12,8 @@ import { fetchOlderMessagesAction } from "@/app/actions/chat";
 interface ParticipantReadInfo {
   user_id: string;
   last_read_at: string;
+  username?: string;
+  avatar_url?: string | null;
 }
 
 interface ChatMessageListProps {
@@ -19,6 +21,7 @@ interface ChatMessageListProps {
   initialMessages: (Message & { sender?: Profile | null })[];
   initialParticipants?: ParticipantReadInfo[];
   currentUserId: string;
+  currentUserProfile?: Profile | null;
 }
 
 // Format: yyyy-MM-dd 요일 (예: 2026-08-25 화요일)
@@ -71,9 +74,9 @@ export function ChatMessageList({
   }, [initialParticipants]);
 
   // Auto scroll to bottom on new incoming messages
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
   useEffect(() => {
     if (isInitialMountRef.current) {
@@ -85,7 +88,7 @@ export function ChatMessageList({
       const container = scrollContainerRef.current;
       if (container) {
         const isNearBottom =
-          container.scrollHeight - container.scrollTop - container.clientHeight < 250;
+          container.scrollHeight - container.scrollTop - container.clientHeight < 300;
         if (isNearBottom) {
           scrollToBottom();
         }
@@ -95,7 +98,37 @@ export function ChatMessageList({
     if (messages.length > 0) {
       lastMsgTimeRef.current = messages[messages.length - 1].created_at;
     }
-  }, [messages]);
+  }, [messages, scrollToBottom]);
+
+  // ⚡ 0.000s OPTIMISTIC MESSAGE LISTENER
+  useEffect(() => {
+    const handleOptimistic = (e: Event) => {
+      const customEvt = e as CustomEvent<Message & { sender?: Profile | null }>;
+      if (customEvt.detail) {
+        setMessages((prev) => [...prev, customEvt.detail]);
+        // Force scroll down immediately
+        requestAnimationFrame(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        });
+      }
+    };
+
+    const handleFailed = (e: Event) => {
+      const customEvt = e as CustomEvent<{ id: string; error?: string }>;
+      if (customEvt.detail?.id) {
+        setMessages((prev) => prev.filter((m) => String(m.id) !== String(customEvt.detail.id)));
+        alert(`메시지 전송에 실패했습니다: ${customEvt.detail.error || "네트워크 오류"}`);
+      }
+    };
+
+    window.addEventListener(`chat:send-optimistic-${roomId}`, handleOptimistic);
+    window.addEventListener(`chat:send-failed-${roomId}`, handleFailed);
+
+    return () => {
+      window.removeEventListener(`chat:send-optimistic-${roomId}`, handleOptimistic);
+      window.removeEventListener(`chat:send-failed-${roomId}`, handleFailed);
+    };
+  }, [roomId]);
 
   // Keep unread count synchronized in ChatProvider on mount & unmount
   useEffect(() => {
@@ -227,6 +260,22 @@ export function ChatMessageList({
     const addMessageSafely = (msg: Message & { sender?: Profile | null }) => {
       if (!msg || !msg.id) return;
       setMessages((prev) => {
+        // Reconcile optimistic message with real server message
+        const optimisticIndex = prev.findIndex(
+          (m) =>
+            m.id === msg.id ||
+            (String(m.id).startsWith("optimistic-") &&
+              m.sender_id === msg.sender_id &&
+              m.content === msg.content &&
+              Math.abs(new Date(m.created_at).getTime() - new Date(msg.created_at).getTime()) < 10000)
+        );
+
+        if (optimisticIndex !== -1) {
+          const updated = [...prev];
+          updated[optimisticIndex] = msg;
+          return updated;
+        }
+
         if (prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
@@ -234,17 +283,8 @@ export function ChatMessageList({
     };
 
     const channel = supabase
-      .channel(`chat_room_view_${roomId}_${Math.random().toString(36).slice(2)}`, {
-        config: { broadcast: { self: true } },
-      })
-      // 1. Instant 0.001s bubble via Broadcast
-      .on("broadcast", { event: "NEW_MESSAGE" }, (payload) => {
-        const msg = payload.payload as Message & { sender?: Profile | null };
-        if (msg && msg.room_id === roomId) {
-          addMessageSafely(msg);
-        }
-      })
-      // 2. Durable Postgres Changes on Messages
+      .channel(`chat_room_view_${roomId}_${Math.random().toString(36).slice(2)}`)
+      // Durable Postgres Changes on Messages
       .on(
         "postgres_changes",
         {
@@ -257,7 +297,25 @@ export function ChatMessageList({
           const newMsg = payload.new as Message;
           if (!newMsg || !newMsg.id) return;
 
-          // Fetch full message record with sender profile
+          // ⚡ Fast-path: Check if sender profile is already in cached participants
+          const cachedSender = participants.find((p) => p.user_id === newMsg.sender_id);
+          if (cachedSender && cachedSender.username) {
+            addMessageSafely({
+              ...newMsg,
+              sender: {
+                id: cachedSender.user_id,
+                username: cachedSender.username,
+                avatar_url: cachedSender.avatar_url || null,
+                role: "USER",
+                bio: null,
+                created_at: "",
+                updated_at: "",
+              },
+            });
+            return;
+          }
+
+          // Fallback: Fetch full message record with sender profile
           const { data: fullMsg } = await supabase
             .from("messages")
             .select("*, sender:profiles(*)")
@@ -268,7 +326,7 @@ export function ChatMessageList({
           addMessageSafely(toAdd);
         }
       )
-      // 3. Real-time Read Receipt updates (when other participants read)
+      // Real-time Read Receipt updates (when other participants read)
       .on(
         "postgres_changes",
         {
@@ -295,7 +353,7 @@ export function ChatMessageList({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomId, markRoomAsRead]);
+  }, [roomId, markRoomAsRead, participants]);
 
   return (
     <div
