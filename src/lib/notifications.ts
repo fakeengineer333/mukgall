@@ -47,7 +47,7 @@ export async function sendChatNotification({
   const options: NotificationOptions & { renotify?: boolean } = {
     body,
     icon: "/icons/icon-192.png",
-    badge: "/icons/icon-192.png",
+    badge: "/icons/badge-96.png",
     tag: roomId ? `chat-room-${roomId}` : "chat-notification",
     renotify: true,
   };

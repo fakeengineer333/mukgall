@@ -20,6 +20,7 @@ export function formatDate(dateString: string | Date | null | undefined): string
   if (diffInDays < 7) return `${diffInDays}일 전`;
 
   return date.toLocaleDateString("ko-KR", {
+    timeZone: "Asia/Seoul",
     year: "numeric",
     month: "short",
     day: "numeric",

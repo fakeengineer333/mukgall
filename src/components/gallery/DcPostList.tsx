@@ -32,28 +32,31 @@ interface DcPostListProps {
   isAdmin?: boolean;
 }
 
-// Format date like DCInside (HH:mm if today, MM.DD if past)
+// Format date like DCInside (HH:mm if today, MM.DD if past) in KST
 function formatDcDate(dateString: string) {
   if (!dateString) return "";
   const d = new Date(dateString);
-  const now = new Date();
 
-  const isToday =
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate();
+  const formatter = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 
+  const parts = formatter.formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value || "";
+
+  const nowParts = formatter.formatToParts(new Date());
+  const getNow = (type: string) => nowParts.find((p) => p.type === type)?.value || "";
+
+  const isToday = get("month") === getNow("month") && get("day") === getNow("day");
   if (isToday) {
-    return d.toLocaleTimeString("ko-KR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+    return `${get("hour")}:${get("minute")}`;
   }
-
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${month}.${day}`;
+  return `${get("month")}.${get("day")}`;
 }
 
 export function DcPostList({
@@ -247,7 +250,10 @@ export function DcPostList({
                       </td>
 
                       {/* 작성일 */}
-                      <td className="py-2.5 px-3 text-center text-zinc-400 text-[11px] whitespace-nowrap">
+                      <td
+                        suppressHydrationWarning
+                        className="py-2.5 px-3 text-center text-zinc-400 text-[11px] whitespace-nowrap"
+                      >
                         {formatDcDate(post.created_at)}
                       </td>
 
@@ -325,7 +331,7 @@ export function DcPostList({
                     <div className="flex items-center gap-1">
                       <span className="text-zinc-400">{post.author?.username || "ㅇㅇ"}</span>
                       <span>•</span>
-                      <span>{formatDcDate(post.created_at)}</span>
+                      <span suppressHydrationWarning>{formatDcDate(post.created_at)}</span>
                     </div>
 
                     <div className="flex items-center gap-2.5 font-mono">

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,14 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.2.1` (2026-08-25)
+- **🛠️ 갤러리 탭 하이드레이션 불일치(React Error #418) 및 DevTools 팝오버 오류 원천 해결**
+  - 서버(Node.js)와 클라이언트(브라우저) 간 타임존 차이로 발생하던 게시글 작성 시각 텍스트 불일치 해결 (`Asia/Seoul` 표준화 및 `suppressHydrationWarning` 적용)
+- **🔔 안드로이드 스마트폰 상태바 회색 네모 알림 아이콘 해결**
+  - 안드로이드 OS 알파 마스크 규격에 맞춘 전용 투명 배경 흑백 실루엣 뱃지(`badge-96.png`) 제작 및 Web Notification API 연동
+- **🎨 라이트/다크 모드 읽음 확인 숫자('1') 시인성 테마 분기 적용**
+  - 라이트 모드(흰 배경)에서는 선명한 `amber-600` 골드 톤, 다크 모드(검은 배경)에서는 화사한 `yellow-400` 레몬 톤으로 자동 전환
 
 ### `v0.2.0` (2026-08-25)
 - **👀 카카오톡 스타일 실시간 '1' 읽음 확인(Read Receipt) 시스템 탑재**

@@ -367,7 +367,7 @@ export function ChatMessageList({
                 {/* Unread Count '1' & Timestamp */}
                 <div className="flex flex-col items-end shrink-0 mb-0.5 select-none">
                   {unreadCount > 0 && (
-                    <span className="text-[10px] font-bold text-amber-400 dark:text-yellow-400 leading-none mb-0.5">
+                    <span className="text-[10px] font-bold text-amber-600 dark:text-yellow-400 leading-none mb-0.5">
                       {unreadCount}
                     </span>
                   )}
@@ -443,7 +443,7 @@ export function ChatMessageList({
                     {/* Unread Count '1' & Timestamp */}
                     <div className="flex flex-col items-start shrink-0 mb-0.5 select-none">
                       {unreadCount > 0 && (
-                        <span className="text-[10px] font-bold text-amber-400 dark:text-yellow-400 leading-none mb-0.5">
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-yellow-400 leading-none mb-0.5">
                           {unreadCount}
                         </span>
                       )}
