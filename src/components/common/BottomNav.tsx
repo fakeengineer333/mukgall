@@ -92,7 +92,7 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
     };
 
     const channel = supabase
-      .channel("bottom_nav_global_unread_sync", {
+      .channel("global_chat_sync", {
         config: { broadcast: { self: true } },
       })
       .on("broadcast", { event: "NEW_MESSAGE" }, (payload) => {

@@ -66,23 +66,30 @@ export function ChatMessageInput({ roomId }: ChatMessageInputProps) {
       if (res?.success && res.message) {
         const supabase = createClient();
         
+        const sendBroadcast = (channelName: string, event: string, payload: any) => {
+          try {
+            const ch = supabase.channel(channelName);
+            if (ch.state === "joined") {
+              ch.send({ type: "broadcast", event, payload });
+            } else {
+              ch.subscribe((status) => {
+                if (status === "SUBSCRIBED") {
+                  ch.send({ type: "broadcast", event, payload });
+                }
+              });
+            }
+          } catch (e) {
+            console.warn(`[Broadcast] ${channelName} send skipped:`, e);
+          }
+        };
+
         // 1. Room specific broadcast (0.001s instant bubble in chat room)
-        const roomChannel = supabase.channel(`chat_room_${roomId}`);
-        roomChannel.send({
-          type: "broadcast",
-          event: "NEW_MESSAGE",
-          payload: res.message,
-        });
+        sendBroadcast(`chat_room_${roomId}`, "NEW_MESSAGE", res.message);
 
         // 2. Global chat sync broadcast (0.001s instant update in ChatRoomList & BottomNav)
-        const globalChannel = supabase.channel("global_chat_sync");
-        globalChannel.send({
-          type: "broadcast",
-          event: "NEW_MESSAGE",
-          payload: {
-            roomId,
-            message: res.message,
-          },
+        sendBroadcast("global_chat_sync", "NEW_MESSAGE", {
+          roomId,
+          message: res.message,
         });
       }
     });
