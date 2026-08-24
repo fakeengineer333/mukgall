@@ -4,9 +4,20 @@
 <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
  width="192.000000pt" height="192.000000pt" viewBox="0 0 192.000000 192.000000"
  preserveAspectRatio="xMidYMid meet">
+<defs>
+  <linearGradient id="pwa-bg-192" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#27272a"/>
+    <stop offset="50%" stop-color="#18181b"/>
+    <stop offset="100%" stop-color="#09090b"/>
+  </linearGradient>
+</defs>
+
+<!-- Dark Squircle Plate with subtle border -->
+<rect width="192" height="192" rx="42" fill="url(#pwa-bg-192)"/>
+<rect x="2" y="2" width="188" height="188" rx="40" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
 
 <g transform="translate(0.000000,192.000000) scale(0.100000,-0.100000)"
-fill="#000000" stroke="none">
+ fill="#FFFFFF" stroke="none">
 <path d="M605 1331 c-27 -10 -80 -24 -117 -31 -61 -12 -69 -12 -86 3 -24 22
 -51 22 -68 0 -19 -25 -17 -53 5 -104 10 -24 22 -64 26 -89 12 -77 18 -82 83
 -75 154 17 256 39 284 63 33 28 36 52 8 59 -24 6 -24 9 -5 63 8 23 15 57 15
