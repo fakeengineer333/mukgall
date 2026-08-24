@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { MessageSquare, PenSquare, Sparkles } from "lucide-react";
+import Image from "next/image";
+import { MessageSquare, PenSquare } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { DcPostList } from "@/components/gallery/DcPostList";
 import { Button } from "@/components/ui/button";
@@ -100,13 +101,23 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       {/* Hero Banner */}
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-950/80 via-zinc-900 to-indigo-950/80 p-5 sm:p-6 border border-blue-900/30 shadow-lg">
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              묵호 갤러리
-            </h1>
-            <p className="text-xs text-zinc-400">
-              반갑다. 묵호 갤러리다.
-            </p>
+          <div className="flex items-center gap-3.5">
+            <Image
+              src="/icons/icon-192.png"
+              alt="묵호 갤러리"
+              width={48}
+              height={48}
+              className="h-12 w-12 shrink-0 rounded-2xl border border-zinc-700/80 shadow-md object-cover"
+              priority
+            />
+            <div className="space-y-0.5">
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                묵호 갤러리
+              </h1>
+              <p className="text-xs text-zinc-400">
+                반갑다. 묵호 갤러리다.
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">

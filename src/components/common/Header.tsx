@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Shield, Sparkles, LogIn } from "lucide-react";
+import { Shield, LogIn } from "lucide-react";
 import { Profile } from "@/types";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -25,9 +26,14 @@ export function Header({ userProfile }: HeaderProps) {
           href="/"
           className="group flex items-center gap-2.5 font-black tracking-tight text-zinc-900 dark:text-zinc-50"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-            <Sparkles className="h-4 w-4" />
-          </div>
+          <Image
+            src="/icons/icon-192.png"
+            alt="묵호 갤러리 로고"
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-xl object-cover border border-zinc-700/60 shadow-md group-hover:scale-105 transition-transform"
+            priority
+          />
           <span className="text-lg font-black tracking-tight">묵호 갤러리</span>
         </Link>
 

@@ -2,8 +2,9 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { LogIn, AlertCircle, Sparkles, Loader2 } from "lucide-react";
+import { LogIn, AlertCircle, Loader2 } from "lucide-react";
 import { loginAction, AuthState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,10 +20,15 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md border-zinc-800 bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
       <CardHeader className="space-y-2 text-center pb-6">
-        <Link href="/" className="inline-flex flex-col items-center gap-2 group mx-auto">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
-            <Sparkles className="h-6 w-6" />
-          </div>
+        <Link href="/" className="inline-flex flex-col items-center gap-2.5 group mx-auto">
+          <Image
+            src="/icons/icon-192.png"
+            alt="묵호 갤러리"
+            width={48}
+            height={48}
+            className="h-12 w-12 rounded-2xl border border-zinc-700/80 shadow-lg object-cover group-hover:scale-105 transition-transform"
+            priority
+          />
           <CardTitle className="text-2xl font-black tracking-tight text-white group-hover:text-blue-400 transition-colors">
             묵호 갤러리 로그인
           </CardTitle>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, X, Sparkles } from "lucide-react";
+import Image from "next/image";
+import { Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function PwaInstallPrompt() {
@@ -39,9 +40,13 @@ export function PwaInstallPrompt() {
     <div className="fixed bottom-20 left-4 right-4 z-40 max-w-md mx-auto rounded-2xl border border-blue-500/40 bg-zinc-900/95 p-4 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom duration-300">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow">
-            <Sparkles className="h-5 w-5" />
-          </div>
+          <Image
+            src="/icons/icon-192.png"
+            alt="묵갤 앱 아이콘"
+            width={44}
+            height={44}
+            className="h-11 w-11 shrink-0 rounded-2xl border border-zinc-700/80 shadow-md object-cover"
+          />
           <div className="space-y-0.5">
             <p className="text-xs font-bold text-white">묵갤 앱 설치하기</p>
             <p className="text-[11px] text-zinc-400">
