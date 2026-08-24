@@ -79,7 +79,7 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
   await updateLastReadAction(roomId);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8.5rem)] -mx-4 -mt-4 sm:mx-0 sm:mt-0 sm:rounded-2xl sm:border sm:border-zinc-800 sm:bg-zinc-950 sm:shadow-2xl overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-8.5rem)] sm:h-[calc(100dvh-9rem)] -mx-4 -mt-4 sm:mx-auto sm:-mt-2 sm:max-w-2xl sm:rounded-2xl border-0 sm:border border-zinc-800 bg-zinc-950 sm:shadow-2xl overflow-hidden">
       <ChatRoomHeader
         room={room as unknown as ChatRoom}
         participants={participants}

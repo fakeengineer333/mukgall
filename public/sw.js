@@ -1,16 +1,6 @@
-const CACHE_NAME = "mukgall-v1";
-const STATIC_ASSETS = [
-  "/",
-  "/manifest.json",
-  "/favicon.ico"
-];
+const CACHE_NAME = "mukgall-v2";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
   self.skipWaiting();
 });
 
@@ -28,38 +18,59 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Only handle GET requests and skip Supabase / Realtime / API requests
+  const url = new URL(event.request.url);
+
+  // 1. Only handle GET requests
+  if (event.request.method !== "GET") {
+    return;
+  }
+
+  // 2. NEVER intercept page navigation requests (prevents ERR_CACHE_MISS and SSR redirect bugs)
+  if (event.request.mode === "navigate") {
+    return;
+  }
+
+  // 3. Skip API, Next.js Server Actions, Next.js RSC requests, Supabase, and extensions
   if (
-    event.request.method !== "GET" ||
-    event.request.url.includes("/api/") ||
-    event.request.url.includes("supabase.co") ||
-    event.request.url.startsWith("chrome-extension://")
+    url.pathname.startsWith("/api/") ||
+    url.pathname.includes("_next/data") ||
+    url.searchParams.has("_rsc") ||
+    url.hostname.includes("supabase.co") ||
+    url.protocol.startsWith("chrome-extension")
   ) {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch fresh copy in background (Stale-While-Revalidate for static assets)
-        fetch(event.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, networkResponse);
-              });
-            }
-          })
-          .catch(() => {});
-        return cachedResponse;
-      }
+  // 4. Only cache static immutable assets (icons, static JS/CSS, images, fonts)
+  const isStaticAsset =
+    url.pathname.startsWith("/icons/") ||
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.endsWith(".png") ||
+    url.pathname.endsWith(".jpg") ||
+    url.pathname.endsWith(".jpeg") ||
+    url.pathname.endsWith(".svg") ||
+    url.pathname.endsWith(".webp") ||
+    url.pathname.endsWith(".ico") ||
+    url.pathname === "/manifest.json";
 
-      return fetch(event.request).catch(() => {
-        // If offline and request is for page navigation, return cached home
-        if (event.request.mode === "navigate") {
-          return caches.match("/");
-        }
-      });
+  if (!isStaticAsset) {
+    return;
+  }
+
+  // Stale-While-Revalidate for static assets only
+  event.respondWith(
+    caches.open(CACHE_NAME).then(async (cache) => {
+      const cachedResponse = await cache.match(event.request);
+      const networkFetch = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        })
+        .catch(() => cachedResponse);
+
+      return cachedResponse || networkFetch;
     })
   );
 });

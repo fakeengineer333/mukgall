@@ -145,7 +145,7 @@ export function ChatRoomHeader({
 
   return (
     <>
-      <div className="sticky top-14 z-30 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/90 px-4 py-3 backdrop-blur-md">
+      <div className="shrink-0 sticky top-0 z-30 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <Link
             href="/chat"

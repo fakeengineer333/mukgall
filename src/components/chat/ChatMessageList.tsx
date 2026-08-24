@@ -82,7 +82,7 @@ export function ChatMessageList({
   }, [roomId]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5">
+    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5 overscroll-contain">
       {messages.map((msg) => {
         // 1. SYSTEM MESSAGE
         if (msg.message_type === "SYSTEM") {

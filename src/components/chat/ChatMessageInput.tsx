@@ -96,7 +96,7 @@ export function ChatMessageInput({ roomId }: ChatMessageInputProps) {
   };
 
   return (
-    <div className="sticky bottom-0 z-20 border-t border-zinc-800 bg-zinc-950/95 p-3 backdrop-blur-md">
+    <div className="shrink-0 z-20 border-t border-zinc-800 bg-zinc-950/95 p-3 backdrop-blur-md">
       {/* Image Preview Banner if selected */}
       {imagePreview && (
         <div className="relative mb-2.5 inline-flex items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-800 p-1.5 pr-3 shadow-lg">

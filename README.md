@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.3-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,13 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.1.4` (2026-08-25)
+- **🎨 채팅방 헤더 여백 및 스크롤 레이아웃 최적화**
+  - 개별 대화방(`/chat/[id]`) 상단에 존재하던 불필요한 공백(`top-14` 오프셋) 제거 및 헤더 플러시 고정
+  - 외부 페이지 스크롤 글리치를 방지하기 위해 컨테이너 높이(`100dvh`) 및 `overscroll-contain` 적용으로 대화방 내부 메시지 스크롤만 부드럽게 작동하도록 UX 완성
+- **🛡️ PWA Service Worker 내비게이션 바이패스 및 ERR_CACHE_MISS 해결**
+  - 서비스 워커의 무차별 페이지 이동 가로채기를 제거하여 동적 SSR 라우트(`/chat`, `/mypage` 등) 접속 안정성 100% 확보
 
 ### `v0.1.3` (2026-08-25)
 - **⚡ 메시지 탭(`/chat`) 초기 진입 및 새로고침 시 실시간 웹소켓 수신 버그 해결**
