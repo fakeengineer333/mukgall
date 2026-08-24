@@ -87,12 +87,42 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   const { data: rawPosts, count } = await query;
 
-  // Format comments_count
-  const posts: Post[] = (rawPosts || []).map((p: any) => ({
-    ...p,
-    comments_count: Array.isArray(p.comments) ? p.comments.length : 0,
-    like_count: p.like_count || 0,
-  }));
+  // Format comments_count and precompute formatted_date for zero-hydration-mismatch
+  const nowKst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const nowYear = nowKst.getUTCFullYear();
+  const nowMonth = nowKst.getUTCMonth();
+  const nowDate = nowKst.getUTCDate();
+
+  const posts: Post[] = (rawPosts || []).map((p: any) => {
+    let formatted_date = "";
+    if (p.created_at) {
+      const d = new Date(p.created_at);
+      if (!isNaN(d.getTime())) {
+        const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+        const isToday =
+          kst.getUTCFullYear() === nowYear &&
+          kst.getUTCMonth() === nowMonth &&
+          kst.getUTCDate() === nowDate;
+
+        if (isToday) {
+          const hh = String(kst.getUTCHours()).padStart(2, "0");
+          const mm = String(kst.getUTCMinutes()).padStart(2, "0");
+          formatted_date = `${hh}:${mm}`;
+        } else {
+          const mm = String(kst.getUTCMonth() + 1).padStart(2, "0");
+          const dd = String(kst.getUTCDate()).padStart(2, "0");
+          formatted_date = `${mm}.${dd}`;
+        }
+      }
+    }
+
+    return {
+      ...p,
+      comments_count: Array.isArray(p.comments) ? p.comments.length : 0,
+      like_count: p.like_count || 0,
+      formatted_date,
+    };
+  });
 
   const totalCount = count || 0;
 

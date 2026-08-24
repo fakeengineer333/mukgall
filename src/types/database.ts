@@ -268,6 +268,7 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Post = Database["public"]["Tables"]["posts"]["Row"] & {
   author?: Profile | null;
   comments_count?: number;
+  formatted_date?: string;
 };
 export type Comment = Database["public"]["Tables"]["comments"]["Row"] & {
   author?: Profile | null;

@@ -254,7 +254,7 @@ export function DcPostList({
                         suppressHydrationWarning
                         className="py-2.5 px-3 text-center text-zinc-400 text-[11px] whitespace-nowrap"
                       >
-                        {formatDcDate(post.created_at)}
+                        {post.formatted_date || formatDcDate(post.created_at)}
                       </td>
 
                       {/* 조회 */}
@@ -331,7 +331,7 @@ export function DcPostList({
                     <div className="flex items-center gap-1">
                       <span className="text-zinc-400">{post.author?.username || "ㅇㅇ"}</span>
                       <span>•</span>
-                      <span suppressHydrationWarning>{formatDcDate(post.created_at)}</span>
+                      <span suppressHydrationWarning>{post.formatted_date || formatDcDate(post.created_at)}</span>
                     </div>
 
                     <div className="flex items-center gap-2.5 font-mono">

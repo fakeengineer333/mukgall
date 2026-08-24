@@ -274,18 +274,28 @@ export function ChatProvider({
     }
   }, [currentUserId]);
 
+  const contextValue = React.useMemo(
+    () => ({
+      unreadCount,
+      unreadRoomsMap,
+      activeRoomId,
+      latestMessage,
+      setActiveRoomId,
+      markRoomAsRead,
+      refreshUnread,
+    }),
+    [
+      unreadCount,
+      unreadRoomsMap,
+      activeRoomId,
+      latestMessage,
+      markRoomAsRead,
+      refreshUnread,
+    ]
+  );
+
   return (
-    <ChatContext.Provider
-      value={{
-        unreadCount,
-        unreadRoomsMap,
-        activeRoomId,
-        latestMessage,
-        setActiveRoomId,
-        markRoomAsRead,
-        refreshUnread,
-      }}
-    >
+    <ChatContext.Provider value={contextValue}>
       {children}
     </ChatContext.Provider>
   );
