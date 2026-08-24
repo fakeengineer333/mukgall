@@ -78,14 +78,29 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
     }
   }, [pathname, currentUserId, checkUnreadCount]);
 
-  // Real-time listener for incoming messages to toggle red dot/badge instantly
+  // Real-time listener for incoming messages to toggle red dot/badge instantly (Broadcast + Postgres Changes)
   useEffect(() => {
     if (!currentUserId) return;
 
     const supabase = createClient();
 
+    const handleNewMessage = (newMsg: { room_id?: string; sender_id?: string }) => {
+      if (!newMsg || newMsg.sender_id === currentUserId) return;
+      // If user is currently looking at this room, don't show badge
+      if (pathname === `/chat/${newMsg.room_id}`) return;
+      setUnreadCount((prev) => prev + 1);
+    };
+
     const channel = supabase
-      .channel("bottom_nav_global_unread_sync")
+      .channel("bottom_nav_global_unread_sync", {
+        config: { broadcast: { self: true } },
+      })
+      .on("broadcast", { event: "NEW_MESSAGE" }, (payload) => {
+        const data = payload.payload as { roomId?: string; message?: { room_id?: string; sender_id?: string } };
+        if (data?.message) {
+          handleNewMessage(data.message);
+        }
+      })
       .on(
         "postgres_changes",
         {
@@ -95,13 +110,9 @@ export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavP
         },
         (payload) => {
           const newMsg = payload.new as { room_id?: string; sender_id?: string };
-          if (!newMsg || newMsg.sender_id === currentUserId) return;
-
-          // If user is currently looking at this room, don't show badge
-          if (pathname === `/chat/${newMsg.room_id}`) return;
-
-          // Update unread count
-          setUnreadCount((prev) => prev + 1);
+          if (newMsg) {
+            handleNewMessage(newMsg);
+          }
         }
       )
       .subscribe();

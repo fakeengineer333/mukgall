@@ -34,9 +34,42 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
   useEffect(() => {
     const supabase = createClient();
 
-    // 1. Listen for new messages across rooms to update snippet, unreadCount, and order
-    const messageChannel = supabase
-      .channel("chat_rooms_message_sync")
+    // Helper to update room with new message
+    const handleIncomingMessage = (newMsg: Message) => {
+      if (!newMsg || !newMsg.room_id) return;
+
+      setRooms((prevRooms) => {
+        const roomIndex = prevRooms.findIndex((r) => r.id === newMsg.room_id);
+
+        // If room is in list, update snippet, unread count, and move to top
+        if (roomIndex !== -1) {
+          const targetRoom = { ...prevRooms[roomIndex] };
+          targetRoom.last_message = newMsg;
+          if (newMsg.sender_id !== currentUserId) {
+            targetRoom.unreadCount = (targetRoom.unreadCount || 0) + 1;
+          }
+
+          const otherRooms = prevRooms.filter((_, idx) => idx !== roomIndex);
+          return [targetRoom, ...otherRooms];
+        }
+
+        // If it's a new room not in list, trigger server refresh
+        router.refresh();
+        return prevRooms;
+      });
+    };
+
+    // 1. Dual-Channel: Listen for new messages across rooms (Broadcast + Postgres Changes)
+    const globalChannel = supabase
+      .channel("global_chat_sync", {
+        config: { broadcast: { self: true } },
+      })
+      .on("broadcast", { event: "NEW_MESSAGE" }, (payload) => {
+        const data = payload.payload as { roomId?: string; message?: Message };
+        if (data?.message) {
+          handleIncomingMessage(data.message);
+        }
+      })
       .on(
         "postgres_changes",
         {
@@ -44,29 +77,11 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
           schema: "public",
           table: "messages",
         },
-        async (payload) => {
+        (payload) => {
           const newMsg = payload.new as Message;
-          if (!newMsg || !newMsg.room_id) return;
-
-          setRooms((prevRooms) => {
-            const roomIndex = prevRooms.findIndex((r) => r.id === newMsg.room_id);
-
-            // If room is in list, update it and move to top
-            if (roomIndex !== -1) {
-              const targetRoom = { ...prevRooms[roomIndex] };
-              targetRoom.last_message = newMsg;
-              if (newMsg.sender_id !== currentUserId) {
-                targetRoom.unreadCount = (targetRoom.unreadCount || 0) + 1;
-              }
-
-              const otherRooms = prevRooms.filter((_, idx) => idx !== roomIndex);
-              return [targetRoom, ...otherRooms];
-            }
-
-            // If it's a new room not in list, trigger server refresh
-            router.refresh();
-            return prevRooms;
-          });
+          if (newMsg) {
+            handleIncomingMessage(newMsg);
+          }
         }
       )
       .subscribe();
@@ -121,7 +136,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
       .subscribe();
 
     return () => {
-      supabase.removeChannel(messageChannel);
+      supabase.removeChannel(globalChannel);
       supabase.removeChannel(participantChannel);
       supabase.removeChannel(roomUpdateChannel);
     };

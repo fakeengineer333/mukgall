@@ -65,11 +65,24 @@ export function ChatMessageInput({ roomId }: ChatMessageInputProps) {
 
       if (res?.success && res.message) {
         const supabase = createClient();
-        const channel = supabase.channel(`chat_room_${roomId}`);
-        channel.send({
+        
+        // 1. Room specific broadcast (0.001s instant bubble in chat room)
+        const roomChannel = supabase.channel(`chat_room_${roomId}`);
+        roomChannel.send({
           type: "broadcast",
           event: "NEW_MESSAGE",
           payload: res.message,
+        });
+
+        // 2. Global chat sync broadcast (0.001s instant update in ChatRoomList & BottomNav)
+        const globalChannel = supabase.channel("global_chat_sync");
+        globalChannel.send({
+          type: "broadcast",
+          event: "NEW_MESSAGE",
+          payload: {
+            roomId,
+            message: res.message,
+          },
         });
       }
     });

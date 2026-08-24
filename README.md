@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.3-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,13 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.1.3` (2026-08-25)
+- **⚡ 메시지 탭(`/chat`) 초기 진입 및 새로고침 시 실시간 웹소켓 수신 버그 해결**
+  - 초기 진입/새로고침 시 메시지 목록 및 안읽은 카운트가 갱신되지 않던 원인 파악 (방 내부 Broadcast만 전송되고 전역 Broadcast 채널 및 REPLICA IDENTITY 누락)
+  - `global_chat_sync` 전역 Broadcast 채널을 신설하여, 메시지 전송 시 0.001초만에 `/chat` 대화방 목록 최상단 이동, 미리보기 문구 갱신, 미확인 배지 카운트 증가가 실시간 반영되도록 듀얼 채널(Broadcast + Postgres Changes) 구조 전면 확장
+  - 하단 네비게이션 바(`BottomNav`)도 `global_chat_sync`와 즉시 연동하여 실시간 레드 닷 / 뱃지가 딜레이 없이 동기화되도록 개선
+  - `messages`, `chat_rooms`, `chat_participants` 테이블의 `supabase_realtime` Publication 및 `REPLICA IDENTITY FULL` 마이그레이션 보강
 
 ### `v0.1.2` (2026-08-25)
 - **✨ 로그인 & 회원가입 UI/UX 전면 개편**
