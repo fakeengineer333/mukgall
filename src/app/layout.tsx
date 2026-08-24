@@ -6,6 +6,7 @@ import { PwaRegister } from "@/components/common/PwaRegister";
 import { PwaInstallPrompt } from "@/components/common/PwaInstallPrompt";
 import { createClient } from "@/lib/supabase/server";
 import { Profile } from "@/types";
+import { ChatProvider } from "@/providers/ChatProvider";
 
 export const metadata: Metadata = {
   title: "묵호 갤러리",
@@ -70,16 +71,18 @@ export default async function RootLayout({
   return (
     <html lang="ko" className="h-full antialiased dark font-sans">
       <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100 selection:bg-blue-600 selection:text-white">
-        <PwaRegister />
-        <Header userProfile={userProfile} />
-        
-        {/* Main App Container */}
-        <main className="flex-1 pb-20 w-full max-w-4xl mx-auto px-4 sm:px-6 pt-4">
-          {children}
-        </main>
+        <ChatProvider currentUserId={userProfile?.id}>
+          <PwaRegister />
+          <Header userProfile={userProfile} />
+          
+          {/* Main App Container */}
+          <main className="flex-1 pb-20 w-full max-w-4xl mx-auto px-4 sm:px-6 pt-4">
+            {children}
+          </main>
 
-        <PwaInstallPrompt />
-        <BottomNav userRole={userProfile?.role} currentUserId={userProfile?.id} />
+          <PwaInstallPrompt />
+          <BottomNav userRole={userProfile?.role} currentUserId={userProfile?.id} />
+        </ChatProvider>
       </body>
     </html>
   );

@@ -1,206 +1,20 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Image as ImageIcon, MessageSquare, PlusCircle, User, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/types";
-import { createClient } from "@/lib/supabase/client";
-import { sendChatNotification, isNotificationSupported } from "@/lib/notifications";
+import { useChat } from "@/providers/ChatProvider";
 
 interface BottomNavProps {
   userRole?: UserRole | null;
   currentUserId?: string | null;
 }
 
-export function BottomNav({ userRole, currentUserId: initialUserId }: BottomNavProps) {
+export function BottomNav({ userRole }: BottomNavProps) {
   const pathname = usePathname();
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(initialUserId || null);
-  const pathnameRef = useRef(pathname);
-
-  // Keep pathname ref synced without triggering effects
-  useEffect(() => {
-    pathnameRef.current = pathname;
-  }, [pathname]);
-
-  // Sync initialUserId prop
-  useEffect(() => {
-    if (initialUserId && initialUserId !== currentUserId) {
-      setCurrentUserId(initialUserId);
-    }
-  }, [initialUserId, currentUserId]);
-
-  // Fallback: resolve user ID if not provided
-  useEffect(() => {
-    if (!currentUserId) {
-      const supabase = createClient();
-      supabase.auth.getUser().then(({ data }) => {
-        if (data?.user?.id) {
-          setCurrentUserId(data.user.id);
-        }
-      });
-    }
-  }, [currentUserId]);
-
-  // Calculate unread count across user's active rooms
-  const refreshUnreadCount = useCallback(async (uid: string) => {
-    try {
-      const supabase = createClient();
-
-      const { data: participations } = await supabase
-        .from("chat_participants")
-        .select("room_id, last_read_at")
-        .eq("user_id", uid)
-        .is("left_at", null);
-
-      if (!participations || participations.length === 0) {
-        setUnreadCount(0);
-        return;
-      }
-
-      let totalUnread = 0;
-      for (const part of participations) {
-        const lastRead = (part as any).last_read_at || "1970-01-01T00:00:00Z";
-        const { count } = await supabase
-          .from("messages")
-          .select("id", { count: "exact", head: true })
-          .eq("room_id", (part as any).room_id)
-          .neq("sender_id", uid)
-          .gt("created_at", lastRead);
-
-        totalUnread += count || 0;
-      }
-
-      setUnreadCount(totalUnread);
-    } catch (e) {
-      console.warn("[BottomNav] Count unread failed:", e);
-    }
-  }, []);
-
-  // Recalculate unread count on pathname, user changes, back navigation, or focus
-  useEffect(() => {
-    if (currentUserId) {
-      refreshUnreadCount(currentUserId);
-    }
-
-    const handleRevisit = () => {
-      if (currentUserId) {
-        refreshUnreadCount(currentUserId);
-      }
-    };
-
-    window.addEventListener("focus", handleRevisit);
-    window.addEventListener("popstate", handleRevisit);
-    return () => {
-      window.removeEventListener("focus", handleRevisit);
-      window.removeEventListener("popstate", handleRevisit);
-    };
-  }, [pathname, currentUserId, refreshUnreadCount]);
-
-  // Single Realtime subscription for incoming messages & OS Notifications
-  useEffect(() => {
-    if (!currentUserId) return;
-
-    const supabase = createClient();
-
-    // Authenticate Realtime socket with user's session JWT on load/refresh
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.access_token) {
-        supabase.realtime.setAuth(session.access_token);
-      }
-    });
-
-    const handleIncomingMessage = (newMsg: {
-      room_id?: string;
-      sender_id?: string;
-      content?: string;
-      sender?: { username?: string };
-    }) => {
-      if (!newMsg || !newMsg.room_id || newMsg.sender_id === currentUserId) return;
-
-      const currentPath = pathnameRef.current;
-      const isViewingCurrentRoom = currentPath === `/chat/${newMsg.room_id}`;
-
-      // Update badge if not currently in this room
-      if (!isViewingCurrentRoom) {
-        setUnreadCount((prev) => prev + 1);
-      }
-
-      // Fire OS System Notification if in another tab, app background, or not in that chat room
-      const senderName = newMsg.sender?.username || "새 메시지";
-      const messageSnippet = newMsg.content || "사진을 보냈습니다.";
-
-      sendChatNotification({
-        title: `💬 ${senderName}`,
-        body: messageSnippet,
-        roomId: newMsg.room_id,
-      });
-    };
-
-    // Isolated channel for BottomNav to avoid collisions with any other components
-    const channel = supabase
-      .channel(`bottom_nav_${currentUserId}_${Math.random().toString(36).slice(2)}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        async (payload) => {
-          const newMsg = payload.new as {
-            id?: string;
-            room_id?: string;
-            sender_id?: string;
-            content?: string;
-          };
-          if (!newMsg || !newMsg.room_id || newMsg.sender_id === currentUserId) return;
-
-          // Fetch sender username for notification
-          let senderUsername = "새 메시지";
-          if (newMsg.sender_id) {
-            const { data: senderProf } = await supabase
-              .from("profiles")
-              .select("username")
-              .eq("id", newMsg.sender_id)
-              .maybeSingle();
-            if (senderProf && (senderProf as any).username) {
-              senderUsername = (senderProf as any).username;
-            }
-          }
-
-          handleIncomingMessage({
-            ...newMsg,
-            sender: { username: senderUsername },
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentUserId]);
-
-  // Auto request notification permission on user's first click if supported
-  useEffect(() => {
-    if (currentUserId && isNotificationSupported() && Notification.permission === "default") {
-      const handleFirstInteraction = () => {
-        Notification.requestPermission().then((p) => {
-          if (p === "granted") {
-            localStorage.setItem("mukgall_notifications_enabled", "true");
-          }
-        });
-        window.removeEventListener("click", handleFirstInteraction);
-      };
-      window.addEventListener("click", handleFirstInteraction, { once: true });
-      return () => {
-        window.removeEventListener("click", handleFirstInteraction);
-      };
-    }
-  }, [currentUserId]);
+  const { unreadCount } = useChat();
 
   // Hide on auth pages
   if (pathname.startsWith("/login") || pathname.startsWith("/signup")) {

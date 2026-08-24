@@ -103,6 +103,17 @@ export default async function ChatListPage() {
       };
     });
 
+    // Sort rooms by latest message activity (most recent first)
+    formattedRooms.sort((a, b) => {
+      const timeA = a.last_message?.created_at
+        ? new Date(a.last_message.created_at).getTime()
+        : new Date(a.created_at).getTime();
+      const timeB = b.last_message?.created_at
+        ? new Date(b.last_message.created_at).getTime()
+        : new Date(b.created_at).getTime();
+      return timeB - timeA;
+    });
+
     return (
       <div className="space-y-6 max-w-2xl mx-auto pb-10">
         <div className="flex items-center justify-between">

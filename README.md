@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.6-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.8-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,18 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.1.8` (2026-08-25)
+- **⚡ 대화방 목록 최신 메시지 순 정렬 및 새로고침 후 실시간 갱신 완벽 개선**
+  - 대화방 목록(`/chat`) 접속 및 새로고침 시 가장 최근 메시지가 온 방이 최상단에 위치하도록 서버(`SSR`) 및 클라이언트 정렬 로직 표준화
+  - `ChatProvider`에서 소켓 연결 전 `supabase.realtime.setAuth` 비동기 완료를 보장하고, `latestMessage` 스트림을 통해 목록 페이지가 즉각 반응하여 방을 최상단으로 재배치하도록 연동
+  - 3초 주기 자동 Catch-Up sync를 적용하여 네트워크 지연 시에도 메시지 및 방 목록이 항상 100% 무결성을 유지하도록 보강
+
+### `v0.1.7` (2026-08-25)
+- **💎 React Context API 기반 전역 `ChatProvider` 도입 (Single Source of Truth)**
+  - 개별 컴포넌트마다 흩어져 있던 웹소켓 구독과 안 읽은 메시지 카운팅 로직을 리액트 기본 내장 `ChatProvider`로 100% 통합
+  - 단 1개의 웹소켓 소켓 연결을 앱 전체가 공유하여 채널 구독 충돌 및 런타임 에러 완전 소멸
+  - `BottomNav`와 `ChatRoomList`가 `useChat()` 훅을 통해 실시간 `unreadCount` 및 `unreadRoomsMap`을 즉시 반영하여 대화방 출입 시 뱃지가 0초 만에 완벽 동기화
 
 ### `v0.1.6` (2026-08-25)
 - **⚡ 초기 진입 및 채팅방 새로고침 시 실시간 메시지 갱신 버그 완벽 해결**

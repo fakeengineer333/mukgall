@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Message, Profile } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/ui/avatar";
-import { updateLastReadAction } from "@/app/actions/chat";
+import { useChat } from "@/providers/ChatProvider";
 
 interface ChatMessageListProps {
   roomId: string;
@@ -18,6 +18,7 @@ export function ChatMessageList({
   initialMessages,
   currentUserId,
 }: ChatMessageListProps) {
+  const { markRoomAsRead } = useChat();
   const [messages, setMessages] = useState<(Message & { sender?: Profile | null })[]>(initialMessages);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -39,17 +40,13 @@ export function ChatMessageList({
     }
   }, [messages]);
 
-  // Keep last_read_at updated on mount, unmount, and new messages
-  const markAsRead = useCallback(() => {
-    updateLastReadAction(roomId);
-  }, [roomId]);
-
+  // Keep unread count synchronized in ChatProvider on mount & unmount
   useEffect(() => {
-    markAsRead();
+    markRoomAsRead(roomId);
     return () => {
-      markAsRead();
+      markRoomAsRead(roomId);
     };
-  }, [markAsRead]);
+  }, [roomId, markRoomAsRead]);
 
   // Catch-up sync: fetch any messages created after latest known message
   const syncNewMessages = useCallback(async () => {
@@ -70,19 +67,19 @@ export function ChatMessageList({
           if (toAdd.length === 0) return prev;
           return [...prev, ...toAdd];
         });
-        markAsRead();
+        markRoomAsRead(roomId);
       }
     } catch (e) {
       console.warn("[ChatMessageList] Catch-up sync error:", e);
     }
-  }, [roomId, markAsRead]);
+  }, [roomId, markRoomAsRead]);
 
   // Visibility / Focus listener for instant catch-up when switching back
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         syncNewMessages();
-        markAsRead();
+        markRoomAsRead(roomId);
       }
     };
 
@@ -92,7 +89,7 @@ export function ChatMessageList({
       window.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("focus", handleVisibility);
     };
-  }, [syncNewMessages, markAsRead]);
+  }, [syncNewMessages, roomId, markRoomAsRead]);
 
   // Periodic fast catch-up interval (every 3 seconds)
   useEffect(() => {
@@ -122,7 +119,7 @@ export function ChatMessageList({
         if (prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
-      markAsRead();
+      markRoomAsRead(roomId);
     };
 
     const channel = supabase
@@ -165,7 +162,7 @@ export function ChatMessageList({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomId, markAsRead]);
+  }, [roomId, markRoomAsRead]);
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5 overscroll-contain">

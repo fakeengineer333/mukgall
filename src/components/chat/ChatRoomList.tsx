@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MessageSquare, Users, ArrowRight, MessageCircleOff } from "lucide-react";
@@ -9,6 +9,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { useChat } from "@/providers/ChatProvider";
 
 interface ChatRoomItem extends ChatRoom {
   otherUser?: Profile | null;
@@ -21,96 +22,78 @@ interface ChatRoomListProps {
   currentUserId: string;
 }
 
+// Helper to sort rooms by most recent activity (latest message or room creation)
+function sortRoomsByRecent(list: ChatRoomItem[]): ChatRoomItem[] {
+  return [...list].sort((a, b) => {
+    const timeA = a.last_message?.created_at
+      ? new Date(a.last_message.created_at).getTime()
+      : new Date(a.created_at).getTime();
+    const timeB = b.last_message?.created_at
+      ? new Date(b.last_message.created_at).getTime()
+      : new Date(b.created_at).getTime();
+    return timeB - timeA;
+  });
+}
+
 export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomListProps) {
   const router = useRouter();
-  const [rooms, setRooms] = useState<ChatRoomItem[]>(initialRooms);
+  const { unreadRoomsMap, latestMessage } = useChat();
+  const [rooms, setRooms] = useState<ChatRoomItem[]>(() => sortRoomsByRecent(initialRooms));
 
   // Sync state if initialRooms updates from server
   useEffect(() => {
-    setRooms(initialRooms);
+    setRooms(sortRoomsByRecent(initialRooms));
   }, [initialRooms]);
 
-  // Refresh server state on back navigation or window focus
+  // React immediately to new messages from global ChatProvider
   useEffect(() => {
-    router.refresh();
+    if (!latestMessage || !latestMessage.room_id) return;
 
-    const handleRevisit = () => {
+    setRooms((prevRooms) => {
+      const roomIndex = prevRooms.findIndex((r) => r.id === latestMessage.room_id);
+      if (roomIndex !== -1) {
+        const targetRoom = { ...prevRooms[roomIndex], last_message: latestMessage };
+        const otherRooms = prevRooms.filter((_, idx) => idx !== roomIndex);
+        return sortRoomsByRecent([targetRoom, ...otherRooms]);
+      }
+      // If room is not in current list (new room created), refresh server
       router.refresh();
+      return prevRooms;
+    });
+  }, [latestMessage, router]);
+
+  // Periodic catch-up refresh every 3 seconds and on window focus/popstate
+  useEffect(() => {
+    const handleRevisit = () => {
+      if (document.visibilityState === "visible") {
+        router.refresh();
+      }
     };
 
     window.addEventListener("focus", handleRevisit);
     window.addEventListener("popstate", handleRevisit);
+    window.addEventListener("visibilitychange", handleRevisit);
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        router.refresh();
+      }
+    }, 3000);
+
     return () => {
       window.removeEventListener("focus", handleRevisit);
       window.removeEventListener("popstate", handleRevisit);
+      window.removeEventListener("visibilitychange", handleRevisit);
+      clearInterval(interval);
     };
   }, [router]);
 
-  // Real-time subscription for Chat Room List updates
+  // Real-time synchronization of room metadata (Title and Avatar updates)
   useEffect(() => {
     const supabase = createClient();
 
-    // Authenticate Realtime socket with user's session JWT on load/refresh
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.access_token) {
-        supabase.realtime.setAuth(session.access_token);
-      }
-    });
-
-    // Helper to update room with new message
-    const handleIncomingMessage = (newMsg: Message) => {
-      if (!newMsg || !newMsg.room_id) return;
-
-      setRooms((prevRooms) => {
-        const roomIndex = prevRooms.findIndex((r) => r.id === newMsg.room_id);
-
-        // If room is in list, update snippet, unread count, and move to top
-        if (roomIndex !== -1) {
-          const targetRoom = { ...prevRooms[roomIndex] };
-          targetRoom.last_message = newMsg;
-          if (newMsg.sender_id !== currentUserId) {
-            targetRoom.unreadCount = (targetRoom.unreadCount || 0) + 1;
-          }
-
-          const otherRooms = prevRooms.filter((_, idx) => idx !== roomIndex);
-          return [targetRoom, ...otherRooms];
-        }
-
-        // If it's a new room not in list, trigger server refresh
-        router.refresh();
-        return prevRooms;
-      });
-    };
-
-    // Single isolated channel with unique ID to avoid collision with BottomNav or other components
     const channel = supabase
-      .channel(`chatroom_list_${currentUserId}_${Math.random().toString(36).slice(2)}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        (payload) => {
-          const newMsg = payload.new as Message;
-          if (newMsg) {
-            handleIncomingMessage(newMsg);
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_participants",
-          filter: `user_id=eq.${currentUserId}`,
-        },
-        () => {
-          router.refresh();
-        }
-      )
+      .channel(`chatroom_meta_sync_${currentUserId}_${Date.now()}`)
       .on(
         "postgres_changes",
         {
@@ -143,7 +126,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUserId, router]);
+  }, [currentUserId]);
 
   if (rooms.length === 0) {
     return (
@@ -235,13 +218,24 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
                   : formatDate(room.created_at)}
               </span>
 
-              {room.unreadCount && room.unreadCount > 0 ? (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white shadow-md shadow-red-600/30 animate-pulse">
-                  {room.unreadCount > 99 ? "99+" : room.unreadCount}
-                </span>
-              ) : (
-                <ArrowRight className="h-4 w-4 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-              )}
+              {(() => {
+                const unreadNum =
+                  unreadRoomsMap[room.id] !== undefined
+                    ? unreadRoomsMap[room.id]
+                    : (room.unreadCount || 0);
+
+                if (unreadNum > 0) {
+                  return (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white shadow-md shadow-red-600/30 animate-pulse">
+                      {unreadNum > 99 ? "99+" : unreadNum}
+                    </span>
+                  );
+                }
+
+                return (
+                  <ArrowRight className="h-4 w-4 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                );
+              })()}
             </div>
           </Link>
         );
