@@ -70,8 +70,8 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="ko" className="h-full antialiased dark font-sans" suppressHydrationWarning>
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100 selection:bg-blue-600 selection:text-white" suppressHydrationWarning>
+    <html lang="ko" className="h-full antialiased font-sans" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 selection:bg-blue-600 selection:text-white transition-colors" suppressHydrationWarning>
         <ChatProvider currentUserId={userProfile?.id}>
           <PwaRegister />
           <Header userProfile={userProfile} />

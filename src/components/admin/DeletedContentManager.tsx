@@ -74,25 +74,25 @@ export function DeletedContentManager({
       {activeTab === "posts" && (
         <div className="space-y-3">
           {posts.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-zinc-800 p-8 text-center text-xs text-zinc-500 bg-zinc-950/40">
+            <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-8 text-center text-xs text-zinc-500 bg-zinc-50 dark:bg-zinc-950/40">
               삭제된 게시글이 없습니다.
             </div>
           ) : (
             posts.map((post) => (
               <div
                 key={post.id}
-                className="flex items-center justify-between p-4 rounded-xl border border-red-900/30 bg-zinc-900/90 shadow-md transition-colors"
+                className="flex items-center justify-between p-4 rounded-xl border border-red-200 dark:border-red-900/30 bg-white dark:bg-zinc-900/90 shadow-md transition-colors"
               >
                 <div className="space-y-1 max-w-[70%]">
                   <div className="flex items-center gap-2">
                     <Badge variant="destructive" className="text-[10px]">
                       삭제됨
                     </Badge>
-                    <span className="text-sm font-bold text-zinc-100 truncate">
+                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
                       {post.title}
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     작성자: {post.author?.username || "익명"} • 삭제일: {formatDate(post.deleted_at)}
                   </p>
                 </div>
@@ -123,25 +123,25 @@ export function DeletedContentManager({
       {activeTab === "comments" && (
         <div className="space-y-3">
           {comments.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-zinc-800 p-8 text-center text-xs text-zinc-500 bg-zinc-950/40">
+            <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-8 text-center text-xs text-zinc-500 bg-zinc-50 dark:bg-zinc-950/40">
               삭제된 댓글이 없습니다.
             </div>
           ) : (
             comments.map((comment) => (
               <div
                 key={comment.id}
-                className="flex items-center justify-between p-4 rounded-xl border border-red-900/30 bg-zinc-900/90 shadow-md transition-colors"
+                className="flex items-center justify-between p-4 rounded-xl border border-red-200 dark:border-red-900/30 bg-white dark:bg-zinc-900/90 shadow-md transition-colors"
               >
                 <div className="space-y-1 max-w-[70%]">
                   <div className="flex items-center gap-2">
                     <Badge variant="destructive" className="text-[10px]">
                       삭제됨
                     </Badge>
-                    <span className="text-xs font-semibold text-zinc-400">
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                       게시글 #{comment.post_id} ({comment.post?.title || "게시글"})
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-200 line-clamp-1">
+                  <p className="text-xs text-zinc-800 dark:text-zinc-200 line-clamp-1">
                     {comment.content}
                   </p>
                   <p className="text-[11px] text-zinc-500">

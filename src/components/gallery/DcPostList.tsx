@@ -164,12 +164,12 @@ export function DcPostList({
       </div>
 
       {/* DCInside Style Table View */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/90 shadow-xl overflow-hidden">
+      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-xl overflow-hidden">
         {/* Desktop / Tablet Table */}
         <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-950/80 text-zinc-400 font-bold select-none">
+              <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/80 text-zinc-600 dark:text-zinc-400 font-bold select-none">
                 <th className="py-2.5 px-3 text-center w-14">번호</th>
                 <th className="py-2.5 px-3">제목</th>
                 <th className="py-2.5 px-3 w-32 text-left">글쓴이</th>
@@ -178,7 +178,7 @@ export function DcPostList({
                 <th className="py-2.5 px-3 text-center w-14">추천</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60 text-zinc-700 dark:text-zinc-300">
               {posts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-16 text-center text-zinc-500 text-xs">
@@ -195,7 +195,7 @@ export function DcPostList({
                   return (
                     <tr
                       key={post.id}
-                      className={`hover:bg-zinc-800/50 transition-colors ${
+                      className={`hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors ${
                         isDeleted ? "bg-red-950/10 opacity-70" : ""
                       }`}
                     >
@@ -208,22 +208,22 @@ export function DcPostList({
                       <td className="py-2.5 px-3">
                         <Link
                           href={`/posts/${post.id}`}
-                          className="group inline-flex items-center gap-1.5 max-w-md truncate align-middle font-medium hover:text-blue-400 transition-colors"
+                          className="group inline-flex items-center gap-1.5 max-w-md truncate align-middle font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         >
                           {/* Image Icon Indicator */}
                           {hasImage && (
-                            <span className="shrink-0 p-0.5 rounded bg-blue-950/80 border border-blue-800/60 text-blue-400">
+                            <span className="shrink-0 p-0.5 rounded bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 text-blue-600 dark:text-blue-400">
                               <ImageIcon className="h-3 w-3" />
                             </span>
                           )}
 
-                          <span className="truncate text-zinc-200 group-hover:text-blue-400">
+                          <span className="truncate text-zinc-900 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                             {post.title}
                           </span>
 
                           {/* Comment Count in DC Style: [3] */}
                           {commentCount > 0 && (
-                            <span className="font-bold text-[11px] text-blue-400 shrink-0">
+                            <span className="font-bold text-[11px] text-blue-600 dark:text-blue-400 shrink-0">
                               [{commentCount}]
                             </span>
                           )}
@@ -240,11 +240,11 @@ export function DcPostList({
                       {/* 글쓴이 */}
                       <td className="py-2.5 px-3 text-left">
                         <div className="flex items-center gap-1 truncate max-w-[120px]">
-                          <span className="text-zinc-300 truncate">
+                          <span className="text-zinc-800 dark:text-zinc-300 truncate">
                             {post.author?.username || "ㅇㅇ"}
                           </span>
                           {isAuthorAdmin && (
-                            <Shield className="h-3 w-3 text-amber-400 shrink-0" />
+                            <Shield className="h-3 w-3 text-amber-500 dark:text-amber-400 shrink-0" />
                           )}
                         </div>
                       </td>
@@ -252,13 +252,13 @@ export function DcPostList({
                       {/* 작성일 */}
                       <td
                         suppressHydrationWarning
-                        className="py-2.5 px-3 text-center text-zinc-400 text-[11px] whitespace-nowrap"
+                        className="py-2.5 px-3 text-center text-zinc-500 dark:text-zinc-400 text-[11px] whitespace-nowrap"
                       >
                         {post.formatted_date || formatDcDate(post.created_at)}
                       </td>
 
                       {/* 조회 */}
-                      <td className="py-2.5 px-3 text-center font-mono text-zinc-400 text-[11px]">
+                      <td className="py-2.5 px-3 text-center font-mono text-zinc-500 dark:text-zinc-400 text-[11px]">
                         {post.view_count}
                       </td>
 
@@ -286,7 +286,7 @@ export function DcPostList({
         </div>
 
         {/* Mobile Compact List View */}
-        <div className="sm:hidden divide-y divide-zinc-800/60">
+        <div className="sm:hidden divide-y divide-zinc-200 dark:divide-zinc-800/60">
           {posts.length === 0 ? (
             <div className="py-12 text-center text-zinc-500 text-xs">
               등록된 게시글이 없습니다.
@@ -301,22 +301,22 @@ export function DcPostList({
                 <Link
                   key={post.id}
                   href={`/posts/${post.id}`}
-                  className="block p-3.5 hover:bg-zinc-800/40 transition-colors space-y-1.5"
+                  className="block p-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors space-y-1.5"
                 >
                   <div className="flex items-start gap-1.5">
                     <span className="text-[11px] font-mono text-zinc-500 shrink-0">
                       {post.id}
                     </span>
                     {hasImage && (
-                      <span className="shrink-0 p-0.5 rounded bg-blue-950/80 border border-blue-800/60 text-blue-400">
+                      <span className="shrink-0 p-0.5 rounded bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 text-blue-600 dark:text-blue-400">
                         <ImageIcon className="h-2.5 w-2.5" />
                       </span>
                     )}
-                    <span className="text-xs font-semibold text-zinc-200 line-clamp-1 flex-1">
+                    <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 line-clamp-1 flex-1">
                       {post.title}
                     </span>
                     {commentCount > 0 && (
-                      <span className="text-[11px] font-bold text-blue-400 shrink-0">
+                      <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 shrink-0">
                         [{commentCount}]
                       </span>
                     )}
@@ -329,14 +329,14 @@ export function DcPostList({
 
                   <div className="flex items-center justify-between text-[11px] text-zinc-500">
                     <div className="flex items-center gap-1">
-                      <span className="text-zinc-400">{post.author?.username || "ㅇㅇ"}</span>
+                      <span className="text-zinc-700 dark:text-zinc-400">{post.author?.username || "ㅇㅇ"}</span>
                       <span>•</span>
                       <span suppressHydrationWarning>{post.formatted_date || formatDcDate(post.created_at)}</span>
                     </div>
 
                     <div className="flex items-center gap-2.5 font-mono">
                       <span>조회 {post.view_count}</span>
-                      <span className={(post.like_count || 0) > 0 ? "text-amber-400 font-bold" : ""}>
+                      <span className={(post.like_count || 0) > 0 ? "text-amber-500 dark:text-amber-400 font-bold" : ""}>
                         추천 {post.like_count || 0}
                       </span>
                     </div>
@@ -356,7 +356,7 @@ export function DcPostList({
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage <= 1}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -368,7 +368,7 @@ export function DcPostList({
                 className={`flex h-8 min-w-8 px-2 items-center justify-center rounded-lg text-xs font-bold transition-all ${
                   currentPage === page
                     ? "bg-blue-600 text-white shadow"
-                    : "border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    : "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 }`}
               >
                 {page}
@@ -378,7 +378,7 @@ export function DcPostList({
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage >= totalPages}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -392,7 +392,7 @@ export function DcPostList({
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="h-9 rounded-xl border border-zinc-800 bg-zinc-900 px-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="h-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">전체</option>
               <option value="title">제목</option>
@@ -405,7 +405,7 @@ export function DcPostList({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="검색어 입력..."
-                className="h-9 text-xs pl-3 pr-8"
+                className="h-9 text-xs pl-3 pr-8 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
               />
             </div>
 

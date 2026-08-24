@@ -70,10 +70,10 @@ export function CommentSection({
   });
 
   return (
-    <div className="space-y-6 pt-6 border-t border-zinc-800">
+    <div className="space-y-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-white flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 text-blue-400" />
+        <h3 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-blue-500" />
           댓글 ({visibleComments.length})
         </h3>
       </div>
@@ -95,12 +95,12 @@ export function CommentSection({
               placeholder="따뜻한 댓글을 남겨보세요..."
               maxLength={1000}
               disabled={isPending}
-              className="flex-1 h-11 rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              className="flex-1 h-11 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             />
             <Button
               type="submit"
               disabled={isPending || !content.trim()}
-              className="h-11 px-4 gap-1.5 font-bold"
+              className="h-11 px-4 gap-1.5 font-bold bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -112,12 +112,12 @@ export function CommentSection({
           </div>
         </form>
       ) : (
-        <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800 text-center">
-          <p className="text-xs text-zinc-400">
+        <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-center">
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">
             댓글을 작성하려면{" "}
             <Link
               href={`/login?redirectTo=/posts/${postId}`}
-              className="font-semibold text-blue-400 hover:underline"
+              className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
             >
               로그인
             </Link>
@@ -143,8 +143,8 @@ export function CommentSection({
                 className={`p-3.5 rounded-xl border ${
                   isDeleted
                     ? "border-red-900/30 bg-red-950/10 opacity-70"
-                    : "border-zinc-800/60 bg-zinc-900/60"
-                } space-y-2 transition-colors`}
+                    : "border-zinc-200 dark:border-zinc-800/60 bg-white dark:bg-zinc-900/60"
+                } space-y-2 transition-colors shadow-sm dark:shadow-none`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -154,7 +154,7 @@ export function CommentSection({
                       size="sm"
                       className="h-6 w-6"
                     />
-                    <span className="text-xs font-semibold text-zinc-200">
+                    <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
                       {comment.author?.username || "익명"}
                     </span>
                     {comment.author?.role === "ADMIN" && (
@@ -178,7 +178,7 @@ export function CommentSection({
                       <button
                         onClick={() => handleDelete(comment.id)}
                         disabled={isPending}
-                        className="p-1 rounded text-zinc-500 hover:text-red-400 transition-colors"
+                        className="p-1 rounded text-zinc-400 hover:text-red-500 transition-colors"
                         title="댓글 삭제"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -188,7 +188,7 @@ export function CommentSection({
                       <button
                         onClick={() => handleRestore(comment.id)}
                         disabled={isPending}
-                        className="p-1 rounded text-emerald-400 hover:bg-emerald-950/40 transition-colors"
+                        className="p-1 rounded text-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-950/40 transition-colors"
                         title="댓글 복구"
                       >
                         <RotateCcw className="h-3.5 w-3.5" />
@@ -197,7 +197,7 @@ export function CommentSection({
                   </div>
                 </div>
 
-                <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed pl-8">
+                <p className="text-xs sm:text-sm text-zinc-800 dark:text-zinc-300 leading-relaxed pl-8">
                   {comment.content}
                 </p>
               </div>

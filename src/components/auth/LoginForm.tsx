@@ -19,7 +19,7 @@ export function LoginForm() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
 
   return (
-    <Card className="w-full max-w-md border-zinc-800 bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
+    <Card className="w-full max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
       <CardHeader className="space-y-3 text-center pb-6">
         <div className="flex flex-col items-center gap-2.5 mx-auto">
           {/* ONLY Icon is a clickable link to home */}
@@ -33,11 +33,11 @@ export function LoginForm() {
               priority
             />
           </Link>
-          <CardTitle className="text-2xl font-black tracking-tight text-white select-none">
+          <CardTitle className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white select-none">
             로그인
           </CardTitle>
         </div>
-        <CardDescription className="text-zinc-400">
+        <CardDescription className="text-zinc-500 dark:text-zinc-400">
           갤러리와 실시간 채팅 서비스를 이용하려면 로그인해주세요.
         </CardDescription>
       </CardHeader>
@@ -56,7 +56,7 @@ export function LoginForm() {
           <div className="space-y-1.5">
             <label
               htmlFor="email"
-              className="text-xs font-semibold text-zinc-300"
+              className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
             >
               이메일
             </label>
@@ -75,7 +75,7 @@ export function LoginForm() {
             <div className="flex items-center justify-between">
               <label
                 htmlFor="password"
-                className="text-xs font-semibold text-zinc-300"
+                className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
               >
                 비밀번호
               </label>

@@ -145,11 +145,11 @@ export function ChatRoomHeader({
 
   return (
     <>
-      <div className="shrink-0 sticky top-0 z-30 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur-md">
+      <div className="shrink-0 sticky top-0 z-30 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 px-4 py-3 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <Link
             href="/chat"
-            className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+            className="rounded-lg p-1 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
@@ -179,7 +179,7 @@ export function ChatRoomHeader({
 
             <div>
               <div className="flex items-center gap-1.5">
-                <h2 className="text-sm font-bold text-zinc-100 max-w-[180px] sm:max-w-xs truncate">
+                <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 max-w-[180px] sm:max-w-xs truncate">
                   {title}
                 </h2>
                 {isGroup && (
@@ -204,7 +204,7 @@ export function ChatRoomHeader({
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 px-2 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300"
+              className="h-8 px-2 text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-600 dark:hover:text-amber-300"
               onClick={() => setShowSettings(true)}
               title="방장 채팅방 설정"
             >
@@ -216,7 +216,7 @@ export function ChatRoomHeader({
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 px-2 text-zinc-400 hover:text-white"
+            className="h-8 px-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
             onClick={() => setShowMembers(true)}
             title="참여자 목록"
           >
@@ -227,7 +227,7 @@ export function ChatRoomHeader({
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 px-2 text-red-400 hover:bg-red-950/40 hover:text-red-300"
+            className="h-8 px-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-600 dark:hover:text-red-300"
             onClick={handleLeave}
             disabled={isPending}
             title="대화방 나가기"
@@ -240,15 +240,15 @@ export function ChatRoomHeader({
       {/* Host Room Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-5 shadow-2xl space-y-4">
+          <div className="relative w-full max-w-sm rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Crown className="h-4 w-4 text-amber-400" />
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Crown className="h-4 w-4 text-amber-500 dark:text-amber-400" />
                 대화방 설정 (방장)
               </h3>
               <button
                 onClick={() => setShowSettings(false)}
-                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -362,21 +362,21 @@ export function ChatRoomHeader({
       {/* Participants Modal with Host Crown Badge */}
       {showMembers && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-5 shadow-2xl space-y-4">
+          <div className="relative w-full max-w-sm rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-400" />
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Users className="h-4 w-4 text-blue-500" />
                 대화방 참여자 ({participants.length})
               </h3>
               <button
                 onClick={() => setShowMembers(false)}
-                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="max-h-60 overflow-y-auto divide-y divide-zinc-800/60 rounded-xl border border-zinc-800 bg-zinc-950/60">
+            <div className="max-h-60 overflow-y-auto divide-y divide-zinc-200 dark:divide-zinc-800/60 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/60">
               {participants.map((p) => {
                 const isRoomCreator = isGroup && p.id === room.created_by;
 
@@ -386,7 +386,7 @@ export function ChatRoomHeader({
                       <Avatar src={p.avatar_url} fallbackText={p.username} size="sm" />
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs font-semibold text-zinc-200">
+                          <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
                             {p.username}
                           </span>
 

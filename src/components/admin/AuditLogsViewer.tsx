@@ -107,22 +107,22 @@ export function AuditLogsViewer({ initialLogs }: AuditLogsViewerProps) {
         </span>
       </div>
 
-      {/* Logs Table / Card List */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/90 shadow-xl overflow-hidden">
+      {/* Logs Table */}
+      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-xl overflow-hidden backdrop-blur-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-950/80 text-zinc-400 font-semibold">
+              <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/80 text-zinc-600 dark:text-zinc-400 font-bold select-none">
                 <th className="py-3 px-4">로그 ID</th>
                 <th className="py-3 px-4">액션</th>
-                <th className="py-3 px-4">행위자</th>
-                <th className="py-3 px-4">대상 (Type / ID)</th>
+                <th className="py-3 px-4">행위자(Actor)</th>
+                <th className="py-3 px-4">대상 리소스</th>
                 <th className="py-3 px-4">IP & 환경</th>
                 <th className="py-3 px-4">기록 일시</th>
                 <th className="py-3 px-4 text-center">메타데이터</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60 text-zinc-700 dark:text-zinc-300">
               {logs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-zinc-500">
@@ -131,7 +131,7 @@ export function AuditLogsViewer({ initialLogs }: AuditLogsViewerProps) {
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-zinc-800/40 transition-colors">
+                  <tr key={log.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
                     <td className="py-3 px-4 font-mono text-zinc-500">#{log.id}</td>
                     <td className="py-3 px-4">
                       <Badge variant={getActionBadgeVariant(log.action)} className="text-[10px]">
@@ -146,25 +146,25 @@ export function AuditLogsViewer({ initialLogs }: AuditLogsViewerProps) {
                           size="sm"
                           className="h-5 w-5"
                         />
-                        <span className="font-semibold text-zinc-200">
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-200">
                           {log.actor?.username || "시스템/비로그인"}
                         </span>
                       </div>
                     </td>
                     <td className="py-3 px-4 font-mono text-[11px]">
-                      <span className="text-blue-400">{log.target_type}</span>
-                      <span className="text-zinc-500"> : </span>
-                      <span className="text-zinc-300 truncate max-w-[80px] inline-block align-bottom">
+                      <span className="text-blue-500 dark:text-blue-400">{log.target_type}</span>
+                      <span className="text-zinc-400 dark:text-zinc-500"> : </span>
+                      <span className="text-zinc-700 dark:text-zinc-300 truncate max-w-[80px] inline-block align-bottom">
                         {log.target_id}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-[11px] text-zinc-400 max-w-[140px] truncate">
+                    <td className="py-3 px-4 text-[11px] text-zinc-600 dark:text-zinc-400 max-w-[140px] truncate">
                       <div className="flex items-center gap-1">
-                        <Globe className="h-3 w-3 text-zinc-500 shrink-0" />
+                        <Globe className="h-3 w-3 text-zinc-400 dark:text-zinc-500 shrink-0" />
                         <span className="font-mono">{log.ip_address || "127.0.0.1"}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-zinc-400 whitespace-nowrap text-[11px]">
+                    <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400 whitespace-nowrap text-[11px]">
                       {new Date(log.created_at).toLocaleString("ko-KR", {
                         month: "2-digit",
                         day: "2-digit",
@@ -177,13 +177,13 @@ export function AuditLogsViewer({ initialLogs }: AuditLogsViewerProps) {
                       {log.metadata && Object.keys(log.metadata).length > 0 ? (
                         <button
                           onClick={() => setSelectedMetadata({ id: log.id, metadata: log.metadata })}
-                          className="inline-flex items-center gap-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 px-2 py-1 text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                          className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 px-2 py-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                         >
                           <Eye className="h-3 w-3" />
                           보기
                         </button>
                       ) : (
-                        <span className="text-zinc-600">-</span>
+                        <span className="text-zinc-400 dark:text-zinc-600">-</span>
                       )}
                     </td>
                   </tr>
@@ -197,15 +197,15 @@ export function AuditLogsViewer({ initialLogs }: AuditLogsViewerProps) {
       {/* Metadata Detail Modal */}
       {selectedMetadata && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl space-y-4">
+          <div className="relative w-full max-w-lg rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Code className="h-4 w-4 text-blue-400" />
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Code className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                 로그 #{selectedMetadata.id} 메타데이터 Diff
               </h3>
               <button
                 onClick={() => setSelectedMetadata(null)}
-                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>

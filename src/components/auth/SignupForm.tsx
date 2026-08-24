@@ -176,7 +176,7 @@ export function SignupForm() {
   };
 
   return (
-    <Card className="w-full max-w-md border-zinc-800 bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
+    <Card className="w-full max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
       <CardHeader className="space-y-3 text-center pb-5">
         <div className="flex flex-col items-center gap-2.5 mx-auto">
           {/* ONLY icon is a clickable link to home */}
@@ -196,11 +196,11 @@ export function SignupForm() {
               />
             )}
           </Link>
-          <CardTitle className="text-2xl font-black tracking-tight text-white select-none">
+          <CardTitle className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white select-none">
             {isVerificationStep ? "이메일 인증 안내" : "회원가입"}
           </CardTitle>
         </div>
-        <CardDescription className="text-zinc-400">
+        <CardDescription className="text-zinc-500 dark:text-zinc-400">
           {isVerificationStep
             ? "발송된 이메일을 확인하여 인증을 완료해주세요."
             : "간단한 프로필을 생성하고 갤러리 커뮤니티에 참여하세요."}
@@ -219,27 +219,27 @@ export function SignupForm() {
             )}
 
             {resendStatus && (
-              <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-3 text-xs text-blue-300">
+              <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-3 text-xs text-blue-600 dark:text-blue-300">
                 {resendStatus}
               </div>
             )}
 
             {/* Email Address Indicator */}
-            <div className="rounded-xl bg-zinc-950/80 p-4 border border-zinc-800 text-center space-y-1.5">
-              <p className="text-xs text-zinc-400 flex items-center justify-center gap-1">
-                <Mail className="h-3.5 w-3.5 text-blue-400" />
+            <div className="rounded-xl bg-zinc-50 dark:bg-zinc-950/80 p-4 border border-zinc-200 dark:border-zinc-800 text-center space-y-1.5">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center justify-center gap-1">
+                <Mail className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
                 인증 메일 수신처
               </p>
-              <p className="text-sm font-mono font-bold text-white break-all">{activeEmail}</p>
+              <p className="text-sm font-mono font-bold text-zinc-900 dark:text-white break-all">{activeEmail}</p>
             </div>
 
             {/* Verification Instructions */}
-            <div className="rounded-xl bg-blue-950/30 border border-blue-800/40 p-4 space-y-1.5 text-xs text-zinc-300 leading-relaxed">
-              <p className="font-bold text-blue-300 flex items-center gap-1.5">
+            <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40 p-4 space-y-1.5 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
+              <p className="font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
                 <KeyRound className="h-3.5 w-3.5" />
                 인증 안내
               </p>
-              <p className="text-zinc-300 text-[11px]">
+              <p className="text-zinc-600 dark:text-zinc-300 text-[11px]">
                 메일 본문에 발송된 <strong>8자리 인증 코드</strong>를 아래에 입력해주세요.
               </p>
             </div>
@@ -370,7 +370,7 @@ export function SignupForm() {
 
             {/* Username */}
             <div className="space-y-1.5">
-              <label htmlFor="username" className="text-xs font-semibold text-zinc-300">
+              <label htmlFor="username" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 닉네임
               </label>
 
@@ -393,7 +393,7 @@ export function SignupForm() {
               {usernameCheck && (
                 <p
                   className={`flex items-center gap-1 text-[11px] font-medium ${
-                    usernameCheck.available ? "text-emerald-400" : "text-red-400"
+                    usernameCheck.available ? "text-emerald-500 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                   }`}
                 >
                   {usernameCheck.available ? (
@@ -408,7 +408,7 @@ export function SignupForm() {
 
             {/* Email */}
             <div className="space-y-1.5">
-              <label htmlFor="email" className="text-xs font-semibold text-zinc-300">
+              <label htmlFor="email" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 이메일
               </label>
 
@@ -431,7 +431,7 @@ export function SignupForm() {
               {emailCheck && (
                 <p
                   className={`flex items-center gap-1 text-[11px] font-medium ${
-                    emailCheck.available ? "text-emerald-400" : "text-red-400"
+                    emailCheck.available ? "text-emerald-500 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                   }`}
                 >
                   {emailCheck.available ? (
@@ -446,7 +446,7 @@ export function SignupForm() {
 
             {/* Password with Eye icon and min-length guidance */}
             <div className="space-y-1.5">
-              <label htmlFor="password" className="text-xs font-semibold text-zinc-300">
+              <label htmlFor="password" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 비밀번호
               </label>
               <div className="relative">
@@ -474,7 +474,7 @@ export function SignupForm() {
               </div>
 
               {password.length > 0 && password.length < 6 && (
-                <p className="flex items-center gap-1 text-[11px] text-amber-400 font-medium">
+                <p className="flex items-center gap-1 text-[11px] text-amber-500 dark:text-amber-400 font-medium">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   비밀번호는 6자 이상 입력해주세요.
                 </p>
@@ -483,7 +483,7 @@ export function SignupForm() {
 
             {/* Bio (Optional) */}
             <div className="space-y-1.5">
-              <label htmlFor="bio" className="text-xs font-semibold text-zinc-300">
+              <label htmlFor="bio" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 한 줄 소개 (선택)
               </label>
               <Input

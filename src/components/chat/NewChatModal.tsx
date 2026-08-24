@@ -85,19 +85,19 @@ export function NewChatModal() {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl space-y-4">
+          <div className="relative w-full max-w-md rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
             {/* Close button */}
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute right-4 top-4 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+              className="absolute right-4 top-4 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors"
               disabled={isPending}
             >
               <X className="h-5 w-5" />
             </button>
 
             <div>
-              <h3 className="text-lg font-bold text-white">새로운 대화 시작</h3>
-              <p className="text-xs text-zinc-400">
+              <h3 className="text-lg font-bold text-zinc-900 dark:text-white">새로운 대화 시작</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 1:1 대화 또는 여러 명과 함께하는 단체 대화방을 만들 수 있습니다.
               </p>
             </div>
@@ -110,7 +110,7 @@ export function NewChatModal() {
             )}
 
             {/* Mode Switch: 1:1 vs Group */}
-            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-zinc-950 border border-zinc-800">
+            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
               <button
                 type="button"
                 onClick={() => {
@@ -118,7 +118,7 @@ export function NewChatModal() {
                   if (selectedUsers.length > 1) setSelectedUsers(selectedUsers.slice(0, 1));
                 }}
                 className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  !isGroup ? "bg-blue-600 text-white shadow" : "text-zinc-400 hover:text-white"
+                  !isGroup ? "bg-blue-600 text-white shadow" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                 }`}
               >
                 <User className="h-3.5 w-3.5" />
@@ -128,7 +128,7 @@ export function NewChatModal() {
                 type="button"
                 onClick={() => setIsGroup(true)}
                 className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  isGroup ? "bg-blue-600 text-white shadow" : "text-zinc-400 hover:text-white"
+                  isGroup ? "bg-blue-600 text-white shadow" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                 }`}
               >
                 <Users className="h-3.5 w-3.5" />
@@ -139,7 +139,7 @@ export function NewChatModal() {
             {/* Group Room Name (if group) */}
             {isGroup && (
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                   대화방 이름 (선택)
                 </label>
                 <Input
@@ -158,14 +158,14 @@ export function NewChatModal() {
                 {selectedUsers.map((u) => (
                   <span
                     key={u.id}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-blue-600/20 border border-blue-500/40 px-2.5 py-1 text-xs text-blue-300"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-600/20 border border-blue-200 dark:border-blue-500/40 px-2.5 py-1 text-xs text-blue-700 dark:text-blue-300"
                   >
                     <Avatar src={u.avatar_url} fallbackText={u.username} size="sm" className="h-4 w-4" />
                     <span>{u.username}</span>
                     <button
                       type="button"
                       onClick={() => setSelectedUsers(selectedUsers.filter((x) => x.id !== u.id))}
-                      className="hover:text-white"
+                      className="hover:text-blue-900 dark:hover:text-white"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -182,13 +182,13 @@ export function NewChatModal() {
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   placeholder="유저 닉네임으로 검색..."
-                  className="pl-9 text-xs"
+                  className="pl-9 text-xs bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
                   disabled={isPending}
                 />
               </div>
 
               {/* Search Results List */}
-              <div className="max-h-48 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950/60 divide-y divide-zinc-800/60">
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/60 divide-y divide-zinc-200 dark:divide-zinc-800/60">
                 {searching ? (
                   <div className="flex items-center justify-center py-6 text-zinc-500 text-xs gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -206,15 +206,15 @@ export function NewChatModal() {
                         key={u.id}
                         type="button"
                         onClick={() => toggleSelectUser(u)}
-                        className={`flex w-full items-center justify-between p-3 text-left transition-colors hover:bg-zinc-800/60 ${
-                          isSelected ? "bg-blue-950/30" : ""
+                        className={`flex w-full items-center justify-between p-3 text-left transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/60 ${
+                          isSelected ? "bg-blue-50 dark:bg-blue-950/30" : ""
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
                           <Avatar src={u.avatar_url} fallbackText={u.username} size="sm" />
                           <div>
                             <div className="flex items-center gap-1">
-                              <span className="text-xs font-semibold text-zinc-200">
+                              <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
                                 {u.username}
                               </span>
                               {u.role === "ADMIN" && (

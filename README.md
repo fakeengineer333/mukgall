@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.3.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.2-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,12 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.3.2` (2026-08-25)
+- **🌓 전 화면 라이트/다크 모드 가독성 및 명도 대비(Color Contrast) 전수 최적화**
+  - 라이트 모드 환경에서 메인 탭(메시지, 마이페이지), DC 게시판 목록, 대화방 목록, 게시글 상세 및 댓글, 모달 창 등의 글자가 흰색으로 묻혀 보이지 않던 이슈 전수 해결
+  - `text-zinc-900 dark:text-white`, `border-zinc-200 dark:border-zinc-800`, `bg-white dark:bg-zinc-900` 등 시스템 테마에 맞는 정밀한 이중 토큰 체계 적용
+  - 시스템 테마(`prefers-color-scheme`) 변경 시 즉각적이고 자연스러운 테마 전환 지원
 
 ### `v0.3.1` (2026-08-25)
 - **🏠 상단 헤더 로고 및 로그인/회원가입 아이콘 클릭 시 메인 갤러리 탭 즉시 이동 연동**

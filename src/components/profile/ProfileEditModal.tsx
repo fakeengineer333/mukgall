@@ -54,27 +54,27 @@ export function ProfileEditModal({ profile }: ProfileEditModalProps) {
       <Button
         variant="outline"
         size="sm"
-        className="gap-1.5 border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700 hover:text-white dark:text-white dark:hover:text-white font-medium shadow-sm"
+        className="gap-1.5 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-700 font-medium shadow-sm"
         onClick={() => setIsOpen(true)}
       >
-        <Edit3 className="h-3.5 w-3.5 text-white shrink-0" />
-        <span className="text-white">프로필 수정</span>
+        <Edit3 className="h-3.5 w-3.5 text-zinc-700 dark:text-white shrink-0" />
+        <span>프로필 수정</span>
       </Button>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+          <div className="relative w-full max-w-md rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl">
             {/* Close button */}
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute right-4 top-4 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+              className="absolute right-4 top-4 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors"
               disabled={isPending}
             >
               <X className="h-5 w-5" />
             </button>
 
-            <h3 className="text-lg font-bold text-white mb-1">프로필 수정</h3>
-            <p className="text-xs text-zinc-400 mb-5">
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-1">프로필 수정</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-5">
               닉네임, 한 줄 소개 및 프로필 사진을 변경할 수 있습니다.
             </p>
 
@@ -100,13 +100,13 @@ export function ProfileEditModal({ profile }: ProfileEditModalProps) {
                 <div className="relative group cursor-pointer">
                   <Avatar
                     src={avatarPreview || avatarUrl}
-                    fallbackText={username}
+                    fallbackText={username || "User"}
                     size="xl"
-                    className="border-2 border-zinc-700"
+                    className="border-2 border-zinc-300 dark:border-zinc-700"
                   />
                   <label
                     htmlFor="edit-avatar-upload"
-                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
                   >
                     {uploadingAvatar ? (
                       <Loader2 className="h-6 w-6 animate-spin" />
@@ -125,7 +125,7 @@ export function ProfileEditModal({ profile }: ProfileEditModalProps) {
                 </div>
                 <label
                   htmlFor="edit-avatar-upload"
-                  className="text-xs text-blue-400 cursor-pointer hover:underline"
+                  className="text-xs text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
                 >
                   {uploadingAvatar ? "업로드 중..." : "사진 변경"}
                 </label>
@@ -135,7 +135,7 @@ export function ProfileEditModal({ profile }: ProfileEditModalProps) {
               <div className="space-y-1.5">
                 <label
                   htmlFor="edit-username"
-                  className="text-xs font-semibold text-zinc-300"
+                  className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
                 >
                   닉네임
                 </label>
@@ -153,7 +153,7 @@ export function ProfileEditModal({ profile }: ProfileEditModalProps) {
               <div className="space-y-1.5">
                 <label
                   htmlFor="edit-bio"
-                  className="text-xs font-semibold text-zinc-300"
+                  className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
                 >
                   한 줄 소개
                 </label>

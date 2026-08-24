@@ -21,13 +21,13 @@ export function PostEditForm({ post }: PostEditFormProps) {
   const [state, formAction, isPending] = useActionState(updatePostAction, initialState);
 
   return (
-    <Card className="w-full max-w-2xl mx-auto border-zinc-800 bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
+    <Card className="w-full max-w-2xl mx-auto border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
       <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-black text-white flex items-center gap-2">
+        <CardTitle className="text-xl font-black text-zinc-900 dark:text-white flex items-center gap-2">
           <Edit3 className="h-5 w-5 text-blue-500" />
           게시글 수정
         </CardTitle>
-        <CardDescription className="text-zinc-400">
+        <CardDescription className="text-zinc-500 dark:text-zinc-400">
           제목, 본문 내용 및 등록된 사진을 수정할 수 있습니다.
         </CardDescription>
       </CardHeader>
@@ -46,7 +46,7 @@ export function PostEditForm({ post }: PostEditFormProps) {
 
           {/* Title */}
           <div className="space-y-1.5">
-            <label htmlFor="title" className="text-xs font-semibold text-zinc-300">
+            <label htmlFor="title" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
               제목
             </label>
             <Input
@@ -68,7 +68,7 @@ export function PostEditForm({ post }: PostEditFormProps) {
 
           {/* Content */}
           <div className="space-y-1.5">
-            <label htmlFor="content" className="text-xs font-semibold text-zinc-300">
+            <label htmlFor="content" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
               본문 내용
             </label>
             <textarea
@@ -78,12 +78,12 @@ export function PostEditForm({ post }: PostEditFormProps) {
               rows={5}
               required
               disabled={isPending}
-              className="flex w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-sm ring-offset-background placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 text-zinc-100 resize-none transition-colors"
+              className="flex w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3.5 py-2.5 text-sm ring-offset-background placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 text-zinc-900 dark:text-zinc-100 resize-none transition-colors"
             />
           </div>
         </CardContent>
 
-        <CardFooter className="flex justify-between items-center pt-2 border-t border-zinc-800/80">
+        <CardFooter className="flex justify-between items-center pt-2 border-t border-zinc-200 dark:border-zinc-800/80">
           <Button
             type="button"
             variant="secondary"

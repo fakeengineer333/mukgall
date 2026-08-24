@@ -111,21 +111,21 @@ export function ChatMessageInput({
   };
 
   return (
-    <div className="shrink-0 z-20 border-t border-zinc-800 bg-zinc-950/95 p-3 backdrop-blur-md">
+    <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 p-3 sm:p-4 backdrop-blur-md">
       {/* Image Preview Banner if selected */}
       {imagePreview && (
-        <div className="relative mb-2.5 inline-flex items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-800 p-1.5 pr-3 shadow-lg">
-          <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-black">
-            <Image src={imagePreview} alt="Attached Preview" fill className="object-cover" />
+        <div className="mb-3 flex items-center gap-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 p-2 border border-zinc-200 dark:border-zinc-800">
+          <div className="relative h-12 w-12 rounded-lg overflow-hidden border border-zinc-300 dark:border-zinc-700 shrink-0">
+            <Image src={imagePreview} alt="Selected preview" fill className="object-cover" />
           </div>
-          <span className="text-xs text-zinc-300">이미지 첨부됨</span>
+          <span className="text-xs text-zinc-700 dark:text-zinc-300">이미지 첨부됨</span>
           <button
             type="button"
             onClick={() => {
               setSelectedImage(null);
               setImagePreview(null);
             }}
-            className="rounded-full bg-zinc-800 p-1 text-zinc-400 hover:text-white"
+            className="rounded-full bg-zinc-200 dark:bg-zinc-800 p-1 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -145,7 +145,7 @@ export function ChatMessageInput({
 
         <label
           htmlFor="chat-image-input"
-          className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+          className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors"
         >
           {uploading ? (
             <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
@@ -159,7 +159,7 @@ export function ChatMessageInput({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="메시지를 입력하세요..."
-          className="h-10 flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="h-10 flex-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           autoComplete="off"
         />
 

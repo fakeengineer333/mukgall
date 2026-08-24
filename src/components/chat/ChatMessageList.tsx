@@ -392,13 +392,13 @@ export function ChatMessageList({
             <div key={msg.id} className="space-y-3">
               {showDateDivider && (
                 <div className="flex justify-center my-4">
-                  <span className="rounded-full bg-zinc-900/90 border border-zinc-800/80 px-3.5 py-1 text-[11px] font-semibold text-zinc-400 shadow-sm">
+                  <span className="rounded-full bg-zinc-100 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800/80 px-3.5 py-1 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 shadow-sm">
                     {formatChatDateDivider(msg.created_at)}
                   </span>
                 </div>
               )}
               <div className="flex justify-center my-3">
-                <span className="rounded-full bg-zinc-900 border border-zinc-800/80 px-3 py-1 text-[11px] font-medium text-zinc-400 shadow-sm">
+                <span className="rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 px-3 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400 shadow-sm">
                   {msg.content}
                 </span>
               </div>
@@ -413,7 +413,7 @@ export function ChatMessageList({
             {/* Date Divider between different calendar days */}
             {showDateDivider && (
               <div className="flex justify-center my-4">
-                <span className="rounded-full bg-zinc-900/90 border border-zinc-800/80 px-3.5 py-1 text-[11px] font-semibold text-zinc-400 shadow-sm">
+                <span className="rounded-full bg-zinc-100 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800/80 px-3.5 py-1 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 shadow-sm">
                   {formatChatDateDivider(msg.created_at)}
                 </span>
               </div>
@@ -471,13 +471,13 @@ export function ChatMessageList({
 
                 <div className="flex flex-col max-w-[78%] sm:max-w-[65%] items-start">
                   {/* Sender Name */}
-                  <span className="text-[11px] text-zinc-400 font-semibold mb-1 pl-1">
+                  <span className="text-[11px] text-zinc-600 dark:text-zinc-400 font-semibold mb-1 pl-1">
                     {msg.sender?.username || "대화 상대"}
                   </span>
 
                   <div className="flex items-end gap-1.5">
                     {/* Message Bubble */}
-                    <div className="rounded-2xl px-4 py-2.5 shadow-md text-xs sm:text-sm leading-relaxed bg-zinc-800 text-zinc-100 rounded-bl-none border border-zinc-700/50">
+                    <div className="rounded-2xl px-4 py-2.5 shadow-md text-xs sm:text-sm leading-relaxed bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-bl-none border border-zinc-200 dark:border-zinc-700/50">
                       {/* Image attachment */}
                       {msg.image_url && (
                         <div

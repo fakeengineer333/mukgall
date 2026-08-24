@@ -128,7 +128,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
           <MessageCircleOff className="h-8 w-8" />
         </div>
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-zinc-300">
+          <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
             참여 중인 대화방이 없습니다.
           </p>
           <p className="text-xs text-zinc-500">
@@ -140,7 +140,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
   }
 
   return (
-    <div className="divide-y divide-zinc-800/80 rounded-2xl border border-zinc-800 bg-zinc-900/90 shadow-xl overflow-hidden">
+    <div className="divide-y divide-zinc-200 dark:divide-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-xl overflow-hidden backdrop-blur-xl">
       {rooms.map((room) => {
         const isGroup = room.is_group;
         const displayName = isGroup
@@ -156,7 +156,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
           <Link
             key={room.id}
             href={`/chat/${room.id}`}
-            className="flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors group"
+            className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group"
           >
             <div className="flex items-center gap-3.5 min-w-0">
               {isGroup ? (
@@ -183,7 +183,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
 
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-zinc-100 truncate group-hover:text-blue-400 transition-colors">
+                  <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {displayName}
                   </span>
                   {isGroup && room.participantCount && (
@@ -198,7 +198,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
                   )}
                 </div>
 
-                <p className="text-xs text-zinc-400 truncate max-w-[220px] sm:max-w-md">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 truncate max-w-[220px] sm:max-w-md">
                   {lastMsg}
                 </p>
               </div>

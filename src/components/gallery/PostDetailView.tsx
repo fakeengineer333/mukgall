@@ -124,10 +124,10 @@ export function PostDetailView({
       )}
 
       {/* Main Post Card */}
-      <Card className="overflow-hidden border-zinc-800 bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
+      <Card className="overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
         {/* Gallery Image Display (Optional) */}
         {images.length > 0 && (
-          <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full bg-zinc-950 overflow-hidden border-b border-zinc-800">
+          <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full bg-zinc-950 overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
             <Image
               src={images[activeImageIndex]}
               alt={`${post.title} - ${activeImageIndex + 1}`}
@@ -168,7 +168,7 @@ export function PostDetailView({
 
         {/* Thumbnail Selector (if multiple images) */}
         {images.length > 1 && (
-          <div className="flex gap-2 p-3 bg-zinc-950/60 overflow-x-auto border-b border-zinc-800 scrollbar-none">
+          <div className="flex gap-2 p-3 bg-zinc-100 dark:bg-zinc-950/60 overflow-x-auto border-b border-zinc-200 dark:border-zinc-800 scrollbar-none">
             {images.map((url, idx) => (
               <button
                 key={idx}
@@ -176,7 +176,7 @@ export function PostDetailView({
                 className={`relative h-14 w-14 shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
                   activeImageIndex === idx
                     ? "border-blue-500 ring-2 ring-blue-500/20 scale-105"
-                    : "border-zinc-800 opacity-60 hover:opacity-100"
+                    : "border-zinc-300 dark:border-zinc-800 opacity-60 hover:opacity-100"
                 }`}
               >
                 <Image src={url} alt={`Thumbnail ${idx + 1}`} fill className="object-cover" />
@@ -188,11 +188,11 @@ export function PostDetailView({
         <CardContent className="p-5 sm:p-7 space-y-6">
           {/* Post Header: Title & Meta */}
           <div className="space-y-3">
-            <h1 className="text-xl sm:text-2xl font-black text-white leading-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-white leading-tight">
               {post.title}
             </h1>
 
-            <div className="flex items-center justify-between flex-wrap gap-3 pt-1 border-b border-zinc-800/80 pb-4">
+            <div className="flex items-center justify-between flex-wrap gap-3 pt-1 border-b border-zinc-200 dark:border-zinc-800/80 pb-4">
               <div className="flex items-center gap-3">
                 <Avatar
                   src={post.author?.avatar_url}
@@ -201,7 +201,7 @@ export function PostDetailView({
                 />
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-bold text-zinc-100">
+                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                       {post.author?.username || "ㅇㅇ"}
                     </span>
                     {post.author?.role === "ADMIN" && (
@@ -217,12 +217,12 @@ export function PostDetailView({
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 text-xs text-zinc-400 bg-zinc-950 px-2.5 py-1.5 rounded-lg border border-zinc-800">
+                <div className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-950 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
                   <Eye className="h-3.5 w-3.5" />
                   <span>조회 {post.view_count}</span>
                 </div>
 
-                <div className="flex items-center gap-1 text-xs text-amber-400 bg-amber-950/40 px-2.5 py-1.5 rounded-lg border border-amber-800/40 font-bold">
+                <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800/40 font-bold">
                   <Flame className="h-3.5 w-3.5" />
                   <span>추천 {likes}</span>
                 </div>
@@ -230,7 +230,7 @@ export function PostDetailView({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-zinc-400 hover:text-white"
+                  className="h-8 w-8 p-0 text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                   onClick={handleShare}
                   title="공유하기"
                 >
@@ -241,12 +241,12 @@ export function PostDetailView({
           </div>
 
           {/* Post Content */}
-          <div className="text-sm sm:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap min-h-[100px]">
+          <div className="text-sm sm:text-base text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap min-h-[100px]">
             {post.content}
           </div>
 
           {/* DCInside Style Recommend Upvote Box */}
-          <div className="flex flex-col items-center justify-center py-6 border-y border-zinc-800/80 my-4 space-y-2 bg-zinc-950/40 rounded-2xl">
+          <div className="flex flex-col items-center justify-center py-6 border-y border-zinc-200 dark:border-zinc-800/80 my-4 space-y-2 bg-zinc-50 dark:bg-zinc-950/40 rounded-2xl">
             <Button
               onClick={handleRecommend}
               className={`h-12 px-7 rounded-2xl gap-2 font-black text-sm shadow-xl transition-all ${

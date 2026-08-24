@@ -152,7 +152,7 @@ export function HomeTabContainer({
       {/* 2. CHAT TAB (Keep-Alive / Instant 0ms View) */}
       <div className={activeView === "chat" ? "block space-y-6 max-w-2xl mx-auto pb-10" : "hidden"}>
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
+          <h1 className="text-2xl font-black text-zinc-900 dark:text-white flex items-center gap-2">
             <MessageSquare className="h-6 w-6 text-blue-500" />
             메시지
           </h1>
@@ -165,13 +165,13 @@ export function HomeTabContainer({
             currentUserId={userProfile.id}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-md space-y-4">
-            <div className="p-4 rounded-full bg-blue-950/60 border border-blue-800/40 text-blue-400">
+          <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 shadow-lg dark:shadow-none backdrop-blur-md space-y-4">
+            <div className="p-4 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/40 text-blue-600 dark:text-blue-400">
               <MessageSquare className="h-8 w-8" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-base font-bold text-zinc-200">로그인이 필요한 기능입니다</h3>
-              <p className="text-xs text-zinc-400">실시간 1:1 대화 및 단체 채팅을 시작해보세요.</p>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-200">로그인이 필요한 기능입니다</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">실시간 1:1 대화 및 단체 채팅을 시작해보세요.</p>
             </div>
             <Link href="/login?redirectTo=/?view=chat">
               <Button size="sm" className="gap-1.5 font-bold text-xs bg-blue-600 hover:bg-blue-700 text-white">
@@ -185,7 +185,7 @@ export function HomeTabContainer({
 
       {/* 3. MYPAGE TAB (Keep-Alive / Instant 0ms View) */}
       <div className={activeView === "mypage" ? "block space-y-6 max-w-2xl mx-auto pb-10" : "hidden"}>
-        <h1 className="text-2xl font-black text-white flex items-center gap-2">
+        <h1 className="text-2xl font-black text-zinc-900 dark:text-white flex items-center gap-2">
           <User className="h-6 w-6 text-blue-500" />
           마이페이지
         </h1>
@@ -203,13 +203,13 @@ export function HomeTabContainer({
             />
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-md space-y-4">
-            <div className="p-4 rounded-full bg-zinc-800 text-zinc-400">
+          <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 shadow-lg dark:shadow-none backdrop-blur-md space-y-4">
+            <div className="p-4 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
               <User className="h-8 w-8" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-base font-bold text-zinc-200">로그인이 필요합니다</h3>
-              <p className="text-xs text-zinc-400">내 프로필, 작성 글, 댓글을 관리하려면 로그인하세요.</p>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-200">로그인이 필요합니다</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">내 프로필, 작성 글, 댓글을 관리하려면 로그인하세요.</p>
             </div>
             <div className="flex items-center gap-2">
               <Link href="/login?redirectTo=/?view=mypage">
@@ -219,7 +219,7 @@ export function HomeTabContainer({
                 </Button>
               </Link>
               <Link href="/signup">
-                <Button size="sm" variant="outline" className="font-bold text-xs border-zinc-700 text-zinc-300">
+                <Button size="sm" variant="outline" className="font-bold text-xs border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300">
                   회원가입
                 </Button>
               </Link>

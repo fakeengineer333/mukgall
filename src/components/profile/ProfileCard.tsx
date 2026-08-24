@@ -25,9 +25,9 @@ export function ProfileCard({
 
   return (
     <div className="space-y-4">
-      <Card className="overflow-hidden border-zinc-800 bg-zinc-900/90 shadow-xl backdrop-blur-xl">
+      <Card className="overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-xl backdrop-blur-xl">
         {/* Banner header gradient */}
-        <div className="h-24 bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-purple-900/40 border-b border-zinc-800" />
+        <div className="h-24 bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-purple-900/40 border-b border-zinc-200 dark:border-zinc-800" />
 
         <CardContent className="relative px-5 pb-5 pt-0">
           {/* Avatar floating on top */}
@@ -36,7 +36,7 @@ export function ProfileCard({
               src={profile.avatar_url}
               fallbackText={profile.username}
               size="xl"
-              className="ring-4 ring-zinc-900 shadow-2xl"
+              className="ring-4 ring-white dark:ring-zinc-900 shadow-2xl"
             />
             <div className="flex items-center gap-2">
               <NotificationToggle />
@@ -47,7 +47,7 @@ export function ProfileCard({
           {/* User info */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-black text-white">{profile.username}</h2>
+              <h2 className="text-xl font-black text-zinc-900 dark:text-white">{profile.username}</h2>
               {isAdmin ? (
                 <Badge variant="admin" className="flex items-center gap-1 font-bold">
                   <Shield className="h-3 w-3" />
@@ -60,7 +60,7 @@ export function ProfileCard({
               )}
             </div>
 
-            <p className="text-sm text-zinc-300">
+            <p className="text-sm text-zinc-700 dark:text-zinc-300">
               {profile.bio || "등록된 한 줄 소개가 없습니다."}
             </p>
 
@@ -71,18 +71,18 @@ export function ProfileCard({
           </div>
 
           {/* Stats Bar */}
-          <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl bg-zinc-950/60 p-3 border border-zinc-800/60">
+          <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl bg-zinc-50 dark:bg-zinc-950/60 p-3 border border-zinc-200 dark:border-zinc-800/60">
             <div className="flex flex-col items-center justify-center p-2 text-center">
-              <span className="text-xs text-zinc-400 flex items-center gap-1">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
                 <ImageIcon className="h-3 w-3" /> 작성한 게시글
               </span>
-              <span className="text-lg font-bold text-white mt-0.5">{postsCount}</span>
+              <span className="text-lg font-bold text-zinc-900 dark:text-white mt-0.5">{postsCount}</span>
             </div>
-            <div className="flex flex-col items-center justify-center p-2 text-center border-l border-zinc-800">
-              <span className="text-xs text-zinc-400 flex items-center gap-1">
+            <div className="flex flex-col items-center justify-center p-2 text-center border-l border-zinc-200 dark:border-zinc-800">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
                 <MessageSquare className="h-3 w-3" /> 작성한 댓글
               </span>
-              <span className="text-lg font-bold text-white mt-0.5">{commentsCount}</span>
+              <span className="text-lg font-bold text-zinc-900 dark:text-white mt-0.5">{commentsCount}</span>
             </div>
           </div>
 
