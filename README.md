@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.3.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.3-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,10 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.3.3` (2026-08-25)
+- **🎨 메인 히어로 배너 문구 및 디자인 간소화**
+  - 메인 히어로 배너의 'DC 스타일' 뱃지 제거 및 서브 타이틀을 **'반갑다. 묵호 갤러리다.'**로 심플하고 직관적이게 수정
 
 ### `v0.3.2` (2026-08-25)
 - **🌓 전 화면 라이트/다크 모드 가독성 및 명도 대비(Color Contrast) 전수 최적화**

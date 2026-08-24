@@ -101,12 +101,9 @@ export function HomeTabContainer({
               <div>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
                   묵호 갤러리
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600/30 border border-blue-500/40 text-blue-400">
-                    DC 스타일
-                  </span>
                 </h1>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  빠르고 가벼운 PWA 커뮤니티 & 실시간 메시징 플랫폼
+                <p className="text-xs text-zinc-300 dark:text-zinc-400 mt-0.5">
+                  반갑다. 묵호 갤러리다.
                 </p>
               </div>
             </div>
