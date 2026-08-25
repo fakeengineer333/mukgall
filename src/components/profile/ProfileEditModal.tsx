@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import { Camera, Edit3, Loader2, AlertCircle, CheckCircle2, X } from "lucide-react";
 import { Profile } from "@/types";
 import { updateProfileAction, ProfileState } from "@/app/actions/profile";
+import { checkUsernameAvailabilityAction } from "@/app/actions/auth";
 import { uploadImageToStorage } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,45 @@ export function ProfileEditModal({ profile }: ProfileEditModalProps) {
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // Username duplication check state
+  const [usernameCheck, setUsernameCheck] = useState<{
+    available: boolean;
+    message: string;
+  } | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setUsername(profile.username);
+      setBio(profile.bio || "");
+      setAvatarUrl(profile.avatar_url || "");
+      setAvatarPreview(null);
+      setUsernameCheck(null);
+    }
+  }, [isOpen, profile]);
+
+  const handleCheckUsername = async (valueToCheck?: string) => {
+    const val = (valueToCheck !== undefined ? valueToCheck : username).trim();
+    if (!val) {
+      setUsernameCheck({ available: false, message: "닉네임을 입력해주세요." });
+      return;
+    }
+    if (val === profile.username) {
+      setUsernameCheck(null);
+      return;
+    }
+    setCheckingUsername(true);
+    try {
+      const res = await checkUsernameAvailabilityAction(val, profile.id);
+      setUsernameCheck(res);
+    } catch {
+      setUsernameCheck({ available: false, message: "중복 확인 중 오류가 발생했습니다." });
+    } finally {
+      setCheckingUsername(false);
+    }
+  };
 
   const initialState: ProfileState = { error: null, success: false };
   const [state, formAction, isPending] = useActionState(async (prev: ProfileState, formData: FormData) => {
@@ -133,20 +173,55 @@ export function ProfileEditModal({ profile }: ProfileEditModalProps) {
 
               {/* Username Input */}
               <div className="space-y-1.5">
-                <label
-                  htmlFor="edit-username"
-                  className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
-                >
-                  닉네임
-                </label>
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="edit-username"
+                    className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+                  >
+                    닉네임
+                  </label>
+                  {checkingUsername && (
+                    <span className="flex items-center gap-1 text-[11px] text-zinc-400">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      중복 확인 중...
+                    </span>
+                  )}
+                </div>
                 <Input
                   id="edit-username"
                   name="username"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    if (usernameCheck) setUsernameCheck(null);
+                  }}
+                  onBlur={() => handleCheckUsername()}
                   required
                   disabled={isPending}
+                  className={
+                    usernameCheck
+                      ? usernameCheck.available
+                        ? "border-emerald-500/50 focus-visible:ring-emerald-500/20"
+                        : "border-red-500/50 focus-visible:ring-red-500/20"
+                      : ""
+                  }
                 />
+                {usernameCheck && (
+                  <p
+                    className={`flex items-center gap-1 text-[11px] font-medium pt-0.5 ${
+                      usernameCheck.available
+                        ? "text-emerald-500 dark:text-emerald-400"
+                        : "text-red-500 dark:text-red-400"
+                    }`}
+                  >
+                    {usernameCheck.available ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                    ) : (
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    )}
+                    <span>{usernameCheck.message}</span>
+                  </p>
+                )}
               </div>
 
               {/* Bio Input */}
@@ -181,7 +256,13 @@ export function ProfileEditModal({ profile }: ProfileEditModalProps) {
                 <Button
                   type="submit"
                   className="flex-1 gap-2 font-bold"
-                  disabled={isPending || uploadingAvatar}
+                  disabled={
+                    isPending ||
+                    uploadingAvatar ||
+                    checkingUsername ||
+                    username.trim().length < 2 ||
+                    (usernameCheck !== null && !usernameCheck.available)
+                  }
                 >
                   {isPending ? (
                     <>

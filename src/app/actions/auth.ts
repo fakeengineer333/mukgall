@@ -61,7 +61,8 @@ export interface AuthState {
 }
 
 export async function checkUsernameAvailabilityAction(
-  username: string
+  username: string,
+  currentUserId?: string
 ): Promise<{ available: boolean; message: string }> {
   const trimmed = username.trim();
   if (!trimmed) {
@@ -86,11 +87,16 @@ export async function checkUsernameAvailabilityAction(
 
   // 2. Database duplicate check
   const supabase = await createClient();
-  const { data } = await supabase
+  let query = supabase
     .from("profiles")
     .select("id")
-    .ilike("username", trimmed)
-    .maybeSingle();
+    .ilike("username", trimmed);
+
+  if (currentUserId) {
+    query = query.neq("id", currentUserId);
+  }
+
+  const { data } = await query.maybeSingle();
 
   if (data) {
     return { available: false, message: "이미 사용 중인 닉네임입니다." };

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.4.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.4.4-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,16 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.4.4` (2026-08-26)
+- **🖼️ 대화방 목록 이미지 첨부 미리보기 텍스트 개선**
+  - 대화방 목록([`ChatRoomList.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/chat/ChatRoomList.tsx))에서 이미지만 전송되었을 때의 미리보기 문구를 `[사진 첨부]` ➜ **`사진을 보냈습니다.`**로 변경하여 모바일/웹 메신저 표준 사용자 경험 제공
+
+### `v0.4.3` (2026-08-26)
+- **🛡️ 마이페이지 닉네임 실시간 중복 확인 & 수정 방지 유효성 검사 구축**
+  - 회원가입과 동일하게 마이페이지 프로필 수정 모달([`ProfileEditModal.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/profile/ProfileEditModal.tsx))에서 닉네임 입력/포커스 아웃 시 실시간 중복 체크 실행
+  - 본인의 기존 닉네임은 정상 허용하며, 타 유저가 이미 사용 중인 닉네임 또는 예약어인 경우 하단에 즉시 경고 메시지 표시
+  - 중복되었거나 유효하지 않은 닉네임인 경우 '저장하기' 버튼 비활성화(Disabled) 처리로 무결성 보장
 
 ### `v0.4.2` (2026-08-26)
 - **💬 채팅 날짜 구분선 포맷 친화적 한글화 (`yyyy년 MM월 dd일 *요일`)**

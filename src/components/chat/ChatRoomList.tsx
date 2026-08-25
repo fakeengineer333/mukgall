@@ -150,7 +150,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
         const displayAvatar = isGroup ? null : room.otherUser?.avatar_url;
         const lastMsg =
           room.last_message?.content ||
-          (room.last_message?.image_url ? "[사진 첨부]" : "대화가 시작되었습니다.");
+          (room.last_message?.image_url ? "사진을 보냈습니다." : "대화가 시작되었습니다.");
 
         return (
           <Link
