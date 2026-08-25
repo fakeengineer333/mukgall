@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MessageSquare, PenSquare, User, LogIn } from "lucide-react";
+import { MessageSquare, PenSquare, User, LogIn, Loader2 } from "lucide-react";
+import { fetchUserChatRoomsAction } from "@/app/actions/chat";
+import { fetchUserActivityAction } from "@/app/actions/post";
 import { DcPostList } from "@/components/gallery/DcPostList";
 import { ChatRoomList } from "@/components/chat/ChatRoomList";
 import { NewChatModal } from "@/components/chat/NewChatModal";
@@ -47,12 +49,50 @@ export function HomeTabContainer({
 }: HomeTabContainerProps) {
   const [activeView, setActiveView] = useState<"gallery" | "chat" | "mypage">(initialView);
 
+  // In-memory cached data states
+  const [rooms, setRooms] = useState<ChatRoom[]>(chatProps.rooms);
+  const [userPosts, setUserPosts] = useState<Post[]>(myPageProps.posts);
+  const [userComments, setUserComments] = useState<Comment[]>(myPageProps.comments);
+  const [loadingChat, setLoadingChat] = useState(false);
+  const [loadingMyPage, setLoadingMyPage] = useState(false);
+  const [chatLoaded, setChatLoaded] = useState(chatProps.rooms.length > 0);
+  const [myPageLoaded, setMyPageLoaded] = useState(myPageProps.posts.length > 0 || myPageProps.comments.length > 0);
+
   // Sync state if initialView changes
   useEffect(() => {
     if (initialView && initialView !== activeView) {
       setActiveView(initialView);
     }
   }, [initialView]);
+
+  // On-demand fetch for Chat tab when first clicked
+  useEffect(() => {
+    if (activeView === "chat" && userProfile && !chatLoaded && !loadingChat) {
+      setLoadingChat(true);
+      fetchUserChatRoomsAction()
+        .then((data) => {
+          setRooms(data);
+          setChatLoaded(true);
+          setLoadingChat(false);
+        })
+        .catch(() => setLoadingChat(false));
+    }
+  }, [activeView, userProfile, chatLoaded, loadingChat]);
+
+  // On-demand fetch for MyPage tab when first clicked
+  useEffect(() => {
+    if (activeView === "mypage" && userProfile && !myPageLoaded && !loadingMyPage) {
+      setLoadingMyPage(true);
+      fetchUserActivityAction()
+        .then((data) => {
+          setUserPosts(data.posts);
+          setUserComments(data.comments);
+          setMyPageLoaded(true);
+          setLoadingMyPage(false);
+        })
+        .catch(() => setLoadingMyPage(false));
+    }
+  }, [activeView, userProfile, myPageLoaded, loadingMyPage]);
 
   // Listen to browser Back / Forward (PopState)
   useEffect(() => {
@@ -157,10 +197,24 @@ export function HomeTabContainer({
         </div>
 
         {userProfile ? (
-          <ChatRoomList
-            rooms={chatProps.rooms as any}
-            currentUserId={userProfile.id}
-          />
+          loadingChat && !chatLoaded ? (
+            <div className="space-y-3 animate-pulse">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/70">
+                  <div className="h-11 w-11 rounded-full bg-zinc-200 dark:bg-zinc-800 shrink-0" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-4 w-32 rounded bg-zinc-200 dark:bg-zinc-800" />
+                    <div className="h-3 w-48 rounded bg-zinc-200 dark:bg-zinc-800/60" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ChatRoomList
+              rooms={rooms as any}
+              currentUserId={userProfile.id}
+            />
+          )
         ) : (
           <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 shadow-lg dark:shadow-none backdrop-blur-md space-y-4">
             <div className="p-4 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/40 text-blue-600 dark:text-blue-400">
@@ -188,17 +242,24 @@ export function HomeTabContainer({
         </h1>
 
         {userProfile ? (
-          <>
-            <ProfileCard
-              profile={userProfile}
-              postsCount={myPageProps.posts.length}
-              commentsCount={myPageProps.comments.length}
-            />
-            <MyActivityList
-              posts={myPageProps.posts}
-              comments={myPageProps.comments}
-            />
-          </>
+          loadingMyPage && !myPageLoaded ? (
+            <div className="space-y-4 animate-pulse">
+              <div className="h-44 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/70" />
+              <div className="h-60 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/70" />
+            </div>
+          ) : (
+            <>
+              <ProfileCard
+                profile={userProfile}
+                postsCount={userPosts.length}
+                commentsCount={userComments.length}
+              />
+              <MyActivityList
+                posts={userPosts}
+                comments={userComments}
+              />
+            </>
+          )
         ) : (
           <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 shadow-lg dark:shadow-none backdrop-blur-md space-y-4">
             <div className="p-4 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">

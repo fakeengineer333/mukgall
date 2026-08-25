@@ -10,7 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
-import { Post } from "@/types";
+import { Post, Comment } from "@/types";
 
 const postSchema = z.object({
   title: z
@@ -467,4 +467,23 @@ export async function incrementViewCount(postId: number): Promise<void> {
   } catch (err) {
     console.warn("[ViewCount] Exception incrementing post view:", err);
   }
+}
+
+export async function fetchUserActivityAction(): Promise<{ posts: Post[]; comments: Comment[] }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { posts: [], comments: [] };
+
+  const [userPostsRes, userCommentsRes] = await Promise.all([
+    supabase.from("posts").select("*").eq("author_id", user.id).is("deleted_at", null).order("created_at", { ascending: false }),
+    supabase.from("comments").select("*").eq("author_id", user.id).is("deleted_at", null).order("created_at", { ascending: false }),
+  ]);
+
+  return {
+    posts: (userPostsRes.data || []) as Post[],
+    comments: (userCommentsRes.data || []) as Comment[],
+  };
 }

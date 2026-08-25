@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.4.1-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,12 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.4.1` (2026-08-26)
+- **🚀 메인 화면 오버페칭 제거 & 온디맨드(On-Demand) 지연 로딩 파이프라인 구축**
+  - 초기 메인 화면 진입 시 오직 **[갤러리 글 목록]**만 단일 쿼리로 초고속 페칭하고, 대화방 목록과 마이페이지 데이터는 탭 클릭 시 온디맨드로 지연 조회하도록 분리
+  - 초기 서버사이드 렌더링(SSR) 쿼리량을 1/3로 축소하여 첫 로딩 속도 극대화
+  - 상단 프로그레스 바(`TopProgressBar`) 애니메이션을 하드웨어 가속 `transform: translateX`로 고도화하여 100% 화면 끝까지 안정적으로 렌더링되도록 개선
 
 ### `v0.4.0` (2026-08-26)
 - **⚡ 전면적인 병렬 쿼리 파이프라인 & 0.02초 Instant Shimmer Skeleton (`loading.tsx`) 스트리밍 구축**

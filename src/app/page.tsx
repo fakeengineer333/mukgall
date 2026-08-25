@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAuthProfile, getAuthUser } from "@/lib/auth";
+import { fetchUserChatRoomsAction } from "@/app/actions/chat";
+import { fetchUserActivityAction } from "@/app/actions/post";
 import { HomeTabContainer } from "@/components/home/HomeTabContainer";
 import { Post, Profile, ChatRoom, Comment } from "@/types";
 
@@ -71,77 +73,31 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const to = from + PAGE_SIZE - 1;
   postsQuery = postsQuery.range(from, to);
 
-  // Parallel Batch 1: Execute Gallery Posts query + User Activity & Participation queries simultaneously
-  if (user) {
-    const [postsRes, myPartsRes, userPostsRes, userCommentsRes] = await Promise.all([
+  let rawPosts: any[] | null = null;
+  let count: number | null = null;
+
+  if (initialView === "chat" && user) {
+    const [postsRes, roomsData] = await Promise.all([
       postsQuery,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase.from("chat_participants") as any)
-        .select("room_id, last_read_at, left_at")
-        .eq("user_id", user.id)
-        .is("left_at", null),
-      supabase.from("posts").select("*").eq("author_id", user.id).is("deleted_at", null).order("created_at", { ascending: false }),
-      supabase.from("comments").select("*").eq("author_id", user.id).is("deleted_at", null).order("created_at", { ascending: false }),
+      fetchUserChatRoomsAction(),
     ]);
-
-    var rawPosts = postsRes.data;
-    var count = postsRes.count;
-    userPosts = ((userPostsRes as any)?.data || []) as Post[];
-    userComments = ((userCommentsRes as any)?.data || []) as Comment[];
-
-    const myParticipations = (myPartsRes.data || []) as {
-      room_id: string;
-      last_read_at: string;
-      left_at: string | null;
-    }[];
-
-    if (myParticipations.length > 0) {
-      const roomIds = myParticipations.map((p) => p.room_id);
-
-      const [roomsRes, allPartsRes, allMsgsRes] = await Promise.all([
-        supabase.from("chat_rooms").select("*").in("id", roomIds).order("created_at", { ascending: false }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from("chat_participants") as any).select("room_id, user_id, joined_at, left_at, profile:profiles(*)").in("room_id", roomIds).is("left_at", null),
-        supabase.from("messages").select("*").in("room_id", roomIds).order("created_at", { ascending: false }),
-      ]);
-
-      const roomsData = (roomsRes.data || []) as unknown as ChatRoom[];
-      const allParticipants = (allPartsRes.data || []) as any[];
-      const allMessages = (allMsgsRes.data || []) as any[];
-
-      formattedRooms = roomsData.map((room) => {
-        const myPart = myParticipations.find((p) => p.room_id === room.id);
-        const roomParticipants = allParticipants.filter((p) => p.room_id === room.id);
-        const otherParticipant = roomParticipants.find((p) => p.user_id !== user.id);
-        const roomMessages = allMessages.filter((m) => m.room_id === room.id);
-        const lastMessage = roomMessages[0] || null;
-
-        const lastReadTime = myPart?.last_read_at ? new Date(myPart.last_read_at).getTime() : 0;
-        const unreadCount = roomMessages.filter(
-          (m) => m.sender_id !== user.id && new Date(m.created_at).getTime() > lastReadTime
-        ).length;
-
-        return {
-          ...room,
-          otherUser: otherParticipant?.profile || null,
-          participantCount: roomParticipants.length,
-          last_message: lastMessage,
-          unread_count: unreadCount,
-        };
-      }).sort((a, b) => {
-        const timeA = a.last_message?.created_at
-          ? new Date(a.last_message.created_at).getTime()
-          : new Date(a.created_at).getTime();
-        const timeB = b.last_message?.created_at
-          ? new Date(b.last_message.created_at).getTime()
-          : new Date(b.created_at).getTime();
-        return timeB - timeA;
-      });
-    }
+    rawPosts = postsRes.data;
+    count = postsRes.count;
+    formattedRooms = roomsData;
+  } else if (initialView === "mypage" && user) {
+    const [postsRes, activityData] = await Promise.all([
+      postsQuery,
+      fetchUserActivityAction(),
+    ]);
+    rawPosts = postsRes.data;
+    count = postsRes.count;
+    userPosts = activityData.posts;
+    userComments = activityData.comments;
   } else {
+    // Default fast-path: Only fetch gallery feed
     const postsRes = await postsQuery;
-    var rawPosts = postsRes.data;
-    var count = postsRes.count;
+    rawPosts = postsRes.data;
+    count = postsRes.count;
   }
 
   // Format comments_count and precompute formatted_date
