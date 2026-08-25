@@ -24,7 +24,7 @@ interface ChatMessageListProps {
   currentUserProfile?: Profile | null;
 }
 
-// Format: yyyy-MM-dd 요일 (예: 2026-08-25 화요일)
+// Format: yyyy년 MM월 dd일 *요일 (예: 2026년 08월 26일 수요일)
 function formatChatDateDivider(dateStr: string): string {
   const d = new Date(dateStr);
   const yyyy = d.getFullYear();
@@ -32,7 +32,7 @@ function formatChatDateDivider(dateStr: string): string {
   const dd = String(d.getDate()).padStart(2, "0");
   const days = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
   const dayName = days[d.getDay()];
-  return `${yyyy}-${mm}-${dd} ${dayName}`;
+  return `${yyyy}년 ${mm}월 ${dd}일 ${dayName}`;
 }
 
 function isDifferentCalendarDay(date1Str: string, date2Str?: string): boolean {

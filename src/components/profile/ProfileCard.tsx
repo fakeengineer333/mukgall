@@ -38,7 +38,7 @@ export function ProfileCard({
               size="xl"
               className="ring-4 ring-white dark:ring-zinc-900 shadow-2xl"
             />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-4 sm:pt-5">
               <NotificationToggle />
               <ProfileEditModal profile={profile} />
             </div>
@@ -48,14 +48,10 @@ export function ProfileCard({
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-black text-zinc-900 dark:text-white">{profile.username}</h2>
-              {isAdmin ? (
+              {isAdmin && (
                 <Badge variant="admin" className="flex items-center gap-1 font-bold">
                   <Shield className="h-3 w-3" />
                   관리자
-                </Badge>
-              ) : (
-                <Badge variant="secondary" className="text-xs">
-                  일반 유저
                 </Badge>
               )}
             </div>

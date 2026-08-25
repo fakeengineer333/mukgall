@@ -5,11 +5,35 @@ import Image from "next/image";
 import { Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const PWA_DISMISS_KEY = "pwa_prompt_dismissed_until";
+const PWA_INSTALLED_KEY = "pwa_installed";
+const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 export function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
+    // Check if already in standalone mode or already marked as installed/dismissed
+    const isStandalone =
+      typeof window !== "undefined" &&
+      (window.matchMedia("(display-mode: standalone)").matches ||
+        (navigator as any).standalone === true);
+
+    if (isStandalone) return;
+
+    try {
+      const isInstalled = localStorage.getItem(PWA_INSTALLED_KEY);
+      if (isInstalled === "true") return;
+
+      const dismissedUntil = localStorage.getItem(PWA_DISMISS_KEY);
+      if (dismissedUntil && Date.now() < Number(dismissedUntil)) {
+        return;
+      }
+    } catch {
+      // localStorage not accessible
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -23,6 +47,13 @@ export function PwaInstallPrompt() {
     };
   }, []);
 
+  const handleDismiss = () => {
+    setShowPrompt(false);
+    try {
+      localStorage.setItem(PWA_DISMISS_KEY, (Date.now() + DISMISS_DURATION_MS).toString());
+    } catch {}
+  };
+
   const handleInstall = async () => {
     if (!deferredPrompt) return;
 
@@ -30,6 +61,9 @@ export function PwaInstallPrompt() {
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === "accepted") {
       setShowPrompt(false);
+      try {
+        localStorage.setItem(PWA_INSTALLED_KEY, "true");
+      } catch {}
     }
     setDeferredPrompt(null);
   };
@@ -56,8 +90,9 @@ export function PwaInstallPrompt() {
         </div>
 
         <button
-          onClick={() => setShowPrompt(false)}
+          onClick={handleDismiss}
           className="rounded-lg p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+          title="7일간 보지 않기"
         >
           <X className="h-4 w-4" />
         </button>

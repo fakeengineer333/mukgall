@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.4.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.4.2-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,15 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.4.2` (2026-08-26)
+- **💬 채팅 날짜 구분선 포맷 친화적 한글화 (`yyyy년 MM월 dd일 *요일`)**
+  - 대화창 날짜 구분선 형식을 `2026-08-26 수요일` ➜ **`2026년 08월 26일 수요일`**로 가독성 높게 개편
+- **👤 마이페이지 프로필 UI 정돈**
+  - 일반 유저 대상 불필요한 '일반 유저' 뱃지 제거 및 관리자 뱃지만 깔끔하게 노출
+  - '알림 설정', '프로필 수정' 액션 버튼의 상단 패딩(`pt-4 sm:pt-5`)을 늘려 아바타와의 시각적 간격 및 레이아웃 안정성 확보
+- **📱 PWA 앱 설치 배너 노출 주기 최적화 (7일간 닫기)**
+  - 닫기(`X`) 클릭 시 `localStorage`에 7일간 숨김 상태를 저장하여 페이지를 이동하거나 새로고침할 때마다 반복해서 뜨던 현상 완벽 해결
 
 ### `v0.4.1` (2026-08-26)
 - **🚀 메인 화면 오버페칭 제거 & 온디맨드(On-Demand) 지연 로딩 파이프라인 구축**
