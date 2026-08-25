@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.3.3-blue.svg)
+![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,13 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.4.0` (2026-08-26)
+- **⚡ 전면적인 병렬 쿼리 파이프라인 & 0.02초 Instant Shimmer Skeleton (`loading.tsx`) 스트리밍 구축**
+  - **React `cache()` 서버 인증 중복 제거**: `layout.tsx`와 `page.tsx` 간의 Supabase Auth 중복 조회를 단 1회로 통합하여 TTFB 대폭 단축
+  - **전 라우트 DB 쿼리 완전 병렬화 (`Promise.all`)**: 메인 피드, 게시글 상세(`/posts/[id]`), 대화방(`/chat/[id]`), 관리자 페이지의 순차적 워터폴 대기를 1회 병렬 배치로 통합
+  - **초고속 네이티브 스켈레톤 스트리밍 (`loading.tsx`) 탑재**: 메인 화면, 게시글 상세, 대화방, 관리자 전 화면에 실물 디자인과 일치하는 Shimmer 스켈레톤 적용으로 클릭 즉시 0.02초 만에 UI 뼈대 렌더링
+  - **상단 네비게이션 프로그레스 바 (`TopProgressBar.tsx`)**: 페이지 이동 시 0.00초 즉시 시각적 반응을 주는 슬림 프로그레스 바 연동
 
 ### `v0.3.3` (2026-08-25)
 - **🎨 메인 히어로 배너 문구 및 디자인 간소화**

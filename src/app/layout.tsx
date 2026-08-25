@@ -5,7 +5,8 @@ import { Header } from "@/components/common/Header";
 import { BottomNav } from "@/components/common/BottomNav";
 import { PwaRegister } from "@/components/common/PwaRegister";
 import { PwaInstallPrompt } from "@/components/common/PwaInstallPrompt";
-import { createClient } from "@/lib/supabase/server";
+import { TopProgressBar } from "@/components/common/TopProgressBar";
+import { getAuthProfile } from "@/lib/auth";
 import { Profile } from "@/types";
 import { ChatProvider } from "@/providers/ChatProvider";
 
@@ -45,34 +46,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let userProfile: Profile | null = null;
-
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        userProfile = profile as unknown as Profile;
-      }
-    }
-  } catch {
-    // Graceful fallback during setup or offline
-    userProfile = null;
-  }
+  const userProfile = await getAuthProfile();
 
   return (
     <html lang="ko" className="h-full antialiased font-sans" suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 selection:bg-blue-600 selection:text-white transition-colors" suppressHydrationWarning>
         <ChatProvider currentUserId={userProfile?.id}>
+          <Suspense fallback={null}>
+            <TopProgressBar />
+          </Suspense>
           <PwaRegister />
           <Header userProfile={userProfile} />
           

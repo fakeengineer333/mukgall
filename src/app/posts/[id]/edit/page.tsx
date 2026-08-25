@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthProfile, getAuthUser } from "@/lib/auth";
 import { PostEditForm } from "@/components/gallery/PostEditForm";
-import { Post, Profile } from "@/types";
+import { Post } from "@/types";
 
 interface PostEditPageProps {
   params: Promise<{ id: string }>;
@@ -15,22 +16,15 @@ export default async function PostEditPage({ params }: PostEditPageProps) {
     notFound();
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [supabase, user, userProfile] = await Promise.all([
+    createClient(),
+    getAuthUser(),
+    getAuthProfile(),
+  ]);
 
   if (!user) {
     redirect(`/login?redirectTo=/posts/${postId}/edit`);
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const isAdmin = (profile as { role?: string } | null)?.role === "ADMIN";
 
   const { data: post, error } = await supabase
     .from("posts")
@@ -43,6 +37,7 @@ export default async function PostEditPage({ params }: PostEditPageProps) {
   }
 
   const typedPost = post as unknown as Post;
+  const isAdmin = userProfile?.role === "ADMIN";
 
   if (typedPost.author_id !== user.id && !isAdmin) {
     redirect(`/posts/${postId}`);

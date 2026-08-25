@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAuthProfile, getAuthUser } from "@/lib/auth";
 import { HomeTabContainer } from "@/components/home/HomeTabContainer";
 import { Post, Profile, ChatRoom, Comment } from "@/types";
 
@@ -22,20 +23,58 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const type = resolvedSearchParams.type || "all";
   const initialView = (resolvedSearchParams.view as "gallery" | "chat" | "mypage") || "gallery";
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [supabase, userProfile, user] = await Promise.all([
+    createClient(),
+    getAuthProfile(),
+    getAuthUser(),
+  ]);
 
-  let userProfile: Profile | null = null;
   let formattedRooms: ChatRoom[] = [];
   let userPosts: Post[] = [];
   let userComments: Comment[] = [];
 
+  const isAdmin = userProfile?.role === "ADMIN";
+
+  // Build Supabase query for Gallery posts
+  let postsQuery = supabase
+    .from("posts")
+    .select("*, author:profiles(*), comments:comments(id)", { count: "exact" });
+
+  if (!isAdmin) {
+    postsQuery = postsQuery.is("deleted_at", null);
+  }
+
+  if (tab === "recommend") {
+    postsQuery = postsQuery.gte("like_count", 3);
+  } else if (tab === "image") {
+    postsQuery = postsQuery.not("image_urls", "eq", "{}");
+  }
+
+  if (search.trim()) {
+    const q = search.trim();
+    if (type === "title") {
+      postsQuery = postsQuery.ilike("title", `%${q}%`);
+    } else if (type === "content") {
+      postsQuery = postsQuery.ilike("content", `%${q}%`);
+    } else {
+      postsQuery = postsQuery.or(`title.ilike.%${q}%,content.ilike.%${q}%`);
+    }
+  }
+
+  if (tab === "recommend") {
+    postsQuery = postsQuery.order("like_count", { ascending: false }).order("created_at", { ascending: false });
+  } else {
+    postsQuery = postsQuery.order("created_at", { ascending: false });
+  }
+
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+  postsQuery = postsQuery.range(from, to);
+
+  // Parallel Batch 1: Execute Gallery Posts query + User Activity & Participation queries simultaneously
   if (user) {
-    // Parallel fetching for instant tabs data
-    const [profileRes, myPartsRes, userPostsRes, userCommentsRes] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", user.id).single(),
+    const [postsRes, myPartsRes, userPostsRes, userCommentsRes] = await Promise.all([
+      postsQuery,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.from("chat_participants") as any)
         .select("room_id, last_read_at, left_at")
@@ -45,9 +84,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       supabase.from("comments").select("*").eq("author_id", user.id).is("deleted_at", null).order("created_at", { ascending: false }),
     ]);
 
-    if ((profileRes as any)?.data) {
-      userProfile = (profileRes as any).data as unknown as Profile;
-    }
+    var rawPosts = postsRes.data;
+    var count = postsRes.count;
     userPosts = ((userPostsRes as any)?.data || []) as Post[];
     userComments = ((userCommentsRes as any)?.data || []) as Comment[];
 
@@ -100,47 +138,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         return timeB - timeA;
       });
     }
-  }
-
-  const isAdmin = userProfile?.role === "ADMIN";
-
-  // Build Supabase query for Gallery posts
-  let query = supabase
-    .from("posts")
-    .select("*, author:profiles(*), comments:comments(id)", { count: "exact" });
-
-  if (!isAdmin) {
-    query = query.is("deleted_at", null);
-  }
-
-  if (tab === "recommend") {
-    query = query.gte("like_count", 3);
-  } else if (tab === "image") {
-    query = query.not("image_urls", "eq", "{}");
-  }
-
-  if (search.trim()) {
-    const q = search.trim();
-    if (type === "title") {
-      query = query.ilike("title", `%${q}%`);
-    } else if (type === "content") {
-      query = query.ilike("content", `%${q}%`);
-    } else {
-      query = query.or(`title.ilike.%${q}%,content.ilike.%${q}%`);
-    }
-  }
-
-  if (tab === "recommend") {
-    query = query.order("like_count", { ascending: false }).order("created_at", { ascending: false });
   } else {
-    query = query.order("created_at", { ascending: false });
+    const postsRes = await postsQuery;
+    var rawPosts = postsRes.data;
+    var count = postsRes.count;
   }
-
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
-  query = query.range(from, to);
-
-  const { data: rawPosts, count } = await query;
 
   // Format comments_count and precompute formatted_date
   const nowKst = new Date(Date.now() + 9 * 60 * 60 * 1000);

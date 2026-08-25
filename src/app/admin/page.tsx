@@ -2,33 +2,20 @@ import { redirect } from "next/navigation";
 import { Shield, Trash2, FileText } from "lucide-react";
 import { fetchAuditLogsAction, fetchDeletedContentAction } from "@/app/actions/admin";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthProfile } from "@/lib/auth";
 import { AdminStats } from "@/components/admin/AdminStats";
 import { AuditLogsViewer } from "@/components/admin/AuditLogsViewer";
 import { DeletedContentManager } from "@/components/admin/DeletedContentManager";
 import { Badge } from "@/components/ui/badge";
-import { Profile } from "@/types";
 
 export default async function AdminPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login?redirectTo=/admin");
-  }
-
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  const profile = profileData as unknown as Profile | null;
+  const profile = await getAuthProfile();
 
   if (!profile || profile.role !== "ADMIN") {
     redirect("/");
   }
+
+  const supabase = await createClient();
 
   // Parallel fetch admin statistics
   const [
