@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.4.4-blue.svg)
+![Version](https://img.shields.io/badge/version-0.5.5-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -164,6 +164,34 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.5.5` (2026-08-28)
+- **🩹 메인 히어로 배너 `<button>` 중첩 하이드레이션 오류 수정**
+  - 메인 히어로 배너([`HomeTabContainer.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/home/HomeTabContainer.tsx))의 '채팅방' 바로가기 버튼에서 발생하던 `<button>` 태그 중첩(Nested button)을 단일 `<Button>` 컴포넌트로 정리하여 브라우저 하이드레이션 경고 완벽 제거
+
+### `v0.5.4` (2026-08-28)
+- **⚡ 대화방 진입 시 `revalidatePath` 렌더 타임 충돌 경고 제거**
+  - 대화방 페이지([`page.tsx`](file:///Users/mukho/Desktop/mukgall/src/app/(chat)/chat/[id]/page.tsx)) 및 [`updateLastReadAction`](file:///Users/mukho/Desktop/mukgall/src/app/actions/chat.ts)에서 불필요한 `revalidatePath` 호출을 제거하고 직접 비동기 DB 업데이트로 전환하여 콘솔 경고 및 서버 지연 제거
+
+### `v0.5.3` (2026-08-28)
+- **⚡ 오픈그래프(OG) 메타데이터 파싱 안정성 및 전용 API 라우트 (`/api/og-preview`) 구축**
+  - 스트림 버퍼 제한(64KB)으로 인해 유튜브/네이버 등 대용량 HTML 페이지에서 발생하던 메타데이터 누락 및 취소 에러 해결
+  - 봇 차단 필터를 우회하는 표준 맥OS 브라우저 User-Agent 적용 및 `/api/og-preview` HTTP 캐시 라우트 연동으로 미리보기 카드 누락 현상 완벽 해결
+
+### `v0.5.2` (2026-08-28)
+- **💬 채팅방 URL 인식 패턴 대폭 확장 & 말풍선 전용 리치 카드 뷰 최적화**
+  - `https://`뿐만 아니라 `www.naver.com`, `youtube.com`, `github.com` 등 프로토콜이 생략된 도메인 링크도 채팅창에서 완벽히 감지하여 하이퍼링크 및 오픈그래프 미리보기 생성
+  - 파란색 본인 말풍선(`me`)과 상대방 말풍선(`other`)의 너비 및 대비에 맞춘 반응형 카드 뷰 지원으로 텍스트 찌그러짐 및 오버플로우 문제 완벽 해결
+
+### `v0.5.1` (2026-08-28)
+- **🩹 하단 네비게이션 미확인 메시지 뱃지 하이드레이션 불일치(Hydration Mismatch) 해결**
+  - 하단 네비게이션 바([`BottomNav.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/common/BottomNav.tsx))의 미확인 메시지 뱃지 렌더링 시점을 클라이언트 마운트(`mounted`) 이후로 안전하게 동기화하여 SSR과 CSR 간 DOM 불일치 에러 완벽 해결
+
+### `v0.5.0` (2026-08-28)
+- **🔗 자동 링크(Auto-Link) & 카카오톡/디스코드 스타일 오픈그래프(OG) 링크 미리보기 카드 탑재**
+  - **전역 자동 링크 변환 ([`FormattedText.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/common/FormattedText.tsx))**: 게시글 본문, 댓글, 1:1/그룹 채팅 메시지 내 모든 `http://` 및 `https://` URL을 감지하여 클릭 가능한 보안 하이퍼링크로 자동 변환
+  - **오픈그래프(OpenGraph) 메타데이터 실시간 파이프라인 ([`linkPreview.ts`](file:///Users/mukho/Desktop/mukgall/src/app/actions/linkPreview.ts))**: 3.5초 안전 타임아웃, 64KB 스트림 헤더 파싱 및 24시간 인메모리 캐싱을 통해 유튜브, 블로그, 뉴스 등의 썸네일·제목·설명·파비콘을 0ms 수준으로 초고속 서빙
+  - **반응형 리치 미리보기 카드 ([`LinkPreviewCard.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/common/LinkPreviewCard.tsx))**: 라이트/다크 모드 완벽 호환, 썸네일 줌인 인터랙션, 외부 링크 아이콘 및 세련된 글래스모피즘 카드 UI 적용
 
 ### `v0.4.4` (2026-08-26)
 - **🖼️ 대화방 목록 이미지 첨부 미리보기 텍스트 개선**

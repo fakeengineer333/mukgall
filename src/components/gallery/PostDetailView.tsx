@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CommentSection } from "@/components/gallery/CommentSection";
+import { FormattedText } from "@/components/common/FormattedText";
 import { formatDate } from "@/lib/utils";
 
 interface PostDetailViewProps {
@@ -241,8 +242,8 @@ export function PostDetailView({
           </div>
 
           {/* Post Content */}
-          <div className="text-sm sm:text-base text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap min-h-[100px]">
-            {post.content}
+          <div className="text-sm sm:text-base text-zinc-800 dark:text-zinc-200 leading-relaxed min-h-[100px]">
+            <FormattedText content={post.content} bubbleStyle="post" />
           </div>
 
           {/* DCInside Style Recommend Upvote Box */}

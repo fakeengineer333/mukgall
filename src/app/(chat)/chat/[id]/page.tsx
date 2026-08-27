@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/auth";
-import { updateLastReadAction } from "@/app/actions/chat";
 import { ChatRoomHeader } from "@/components/chat/ChatRoomHeader";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { ChatMessageInput } from "@/components/chat/ChatMessageInput";
@@ -83,7 +82,13 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
   const currentUserProfile = participants.find((p) => p.id === user.id) || null;
 
   // Non-blocking update last_read_at in background
-  updateLastReadAction(roomId).catch(() => {});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (supabase.from("chat_participants") as any)
+    .update({ last_read_at: new Date().toISOString() })
+    .eq("room_id", roomId)
+    .eq("user_id", user.id)
+    .then(() => {})
+    .catch(() => {});
 
   return (
     <div className="flex flex-col h-[calc(100dvh-8.5rem)] sm:h-[calc(100dvh-9rem)] -mx-4 -mt-4 sm:mx-auto sm:-mt-2 sm:max-w-2xl sm:rounded-2xl border-0 sm:border border-zinc-800 bg-zinc-950 sm:shadow-2xl overflow-hidden">

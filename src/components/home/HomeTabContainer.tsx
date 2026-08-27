@@ -156,19 +156,19 @@ export function HomeTabContainer({
                   글쓰기
                 </Button>
               </Link>
-              <button
+              <Button
                 type="button"
+                size="sm"
+                variant="outline"
                 onClick={() => {
                   window.history.pushState(null, "", "/?view=chat");
                   setActiveView("chat");
                 }}
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-none h-9 gap-1.5 font-bold text-xs border-zinc-700 bg-zinc-800/80 hover:bg-zinc-800 text-zinc-200"
               >
-                <Button size="sm" variant="outline" className="w-full h-9 gap-1.5 font-bold text-xs border-zinc-700 bg-zinc-800/80 hover:bg-zinc-800 text-zinc-200">
-                  <MessageSquare className="h-4 w-4 text-blue-400" />
-                  채팅방
-                </Button>
-              </button>
+                <MessageSquare className="h-4 w-4 text-blue-400" />
+                채팅방
+              </Button>
             </div>
           </div>
         </section>

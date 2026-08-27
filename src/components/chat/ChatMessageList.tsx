@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Message, Profile } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/ui/avatar";
+import { FormattedText } from "@/components/common/FormattedText";
 import { useChat } from "@/providers/ChatProvider";
 import { fetchOlderMessagesAction } from "@/app/actions/chat";
 
@@ -456,7 +457,13 @@ export function ChatMessageList({
                   )}
 
                   {/* Text content */}
-                  {msg.content && <p className="whitespace-pre-wrap break-words">{msg.content}</p>}
+                  {msg.content && (
+                    <FormattedText
+                      content={msg.content}
+                      bubbleStyle="me"
+                      compactPreview={true}
+                    />
+                  )}
                 </div>
               </div>
             ) : (
@@ -495,7 +502,13 @@ export function ChatMessageList({
                       )}
 
                       {/* Text content */}
-                      {msg.content && <p className="whitespace-pre-wrap break-words">{msg.content}</p>}
+                      {msg.content && (
+                        <FormattedText
+                          content={msg.content}
+                          bubbleStyle="other"
+                          compactPreview={true}
+                        />
+                      )}
                     </div>
 
                     {/* Unread Count '1' & Timestamp */}

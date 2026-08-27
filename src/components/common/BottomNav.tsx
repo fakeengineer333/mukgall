@@ -17,9 +17,14 @@ export function BottomNav({ userRole }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { unreadCount } = useChat();
+  const [mounted, setMounted] = useState(false);
 
   const isHome = pathname === "/";
   const [currentTab, setCurrentTab] = useState<string>("gallery");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Sync tab with URL searchParams & PopState on client
   useEffect(() => {
@@ -94,7 +99,7 @@ export function BottomNav({ userRole }: BottomNavProps) {
       href: "/chat",
       icon: MessageSquare,
       active: (isHome && currentTab === "chat") || pathname.startsWith("/chat"),
-      badge: unreadCount > 0 ? unreadCount : undefined,
+      badge: mounted && unreadCount > 0 ? unreadCount : undefined,
       onClick: (e: React.MouseEvent) => handleTabClick(e, "chat", "/?view=chat"),
     },
     {

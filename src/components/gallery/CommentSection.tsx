@@ -8,6 +8,7 @@ import { createCommentAction, deleteCommentAction, restoreCommentAction } from "
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { FormattedText } from "@/components/common/FormattedText";
 import { formatDate } from "@/lib/utils";
 
 interface CommentSectionProps {
@@ -197,9 +198,9 @@ export function CommentSection({
                   </div>
                 </div>
 
-                <p className="text-xs sm:text-sm text-zinc-800 dark:text-zinc-300 leading-relaxed pl-8">
-                  {comment.content}
-                </p>
+                <div className="text-xs sm:text-sm text-zinc-800 dark:text-zinc-300 leading-relaxed pl-8">
+                  <FormattedText content={comment.content} bubbleStyle="comment" compactPreview={true} />
+                </div>
               </div>
             );
           })

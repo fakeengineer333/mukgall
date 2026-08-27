@@ -317,9 +317,6 @@ export async function updateLastReadAction(roomId: string): Promise<void> {
       .update({ last_read_at: new Date().toISOString() })
       .eq("room_id", roomId)
       .eq("user_id", user.id);
-
-    revalidatePath("/chat");
-    revalidatePath(`/chat/${roomId}`);
   } catch (err) {
     console.warn("[Chat] Update last read failed:", err);
   }
