@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { MessageSquare, Send, Loader2, Trash2, RotateCcw, AlertCircle } from "lucide-react";
-import { Comment, UserRole } from "@/types";
+import { Comment, Profile, UserRole } from "@/types";
 import { createCommentAction, deleteCommentAction, restoreCommentAction } from "@/app/actions/comment";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,50 +16,140 @@ interface CommentSectionProps {
   comments: Comment[];
   currentUserId?: string | null;
   currentUserRole?: UserRole | null;
+  currentUserProfile?: Profile | null;
 }
 
 export function CommentSection({
   postId,
-  comments,
+  comments: initialComments,
   currentUserId,
   currentUserRole,
+  currentUserProfile,
 }: CommentSectionProps) {
+  const [comments, setComments] = useState<Comment[]>(initialComments);
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
+
+  const DRAFT_KEY = `mukgall_draft_comment_${postId}`;
+
+  // Sync with props when server revalidates
+  useEffect(() => {
+    setComments(initialComments);
+  }, [initialComments]);
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedDraft = localStorage.getItem(DRAFT_KEY);
+      if (savedDraft) {
+        setContent(savedDraft);
+      }
+    }
+  }, [DRAFT_KEY]);
+
+  // Auto-save draft on change
+  const handleContentChange = (val: string) => {
+    setContent(val);
+    if (typeof window !== "undefined") {
+      if (val.trim()) {
+        localStorage.setItem(DRAFT_KEY, val);
+      } else {
+        localStorage.removeItem(DRAFT_KEY);
+      }
+    }
+  };
 
   const isAdmin = currentUserRole === "ADMIN";
 
   const handleCreateComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    const commentText = content.trim();
+    if (!commentText || !currentUserId) return;
 
     setError(null);
-    const formData = new FormData();
-    formData.append("content", content);
 
+    // 1. Optimistic UI: Immediately create temporary comment
+    const tempId = -Date.now();
+    const optimisticComment: Comment = {
+      id: tempId,
+      post_id: postId,
+      author_id: currentUserId,
+      content: commentText,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      deleted_at: null,
+      author: currentUserProfile
+        ? currentUserProfile
+        : {
+            id: currentUserId,
+            username: "나",
+            avatar_url: null,
+            bio: null,
+            role: currentUserRole || "USER",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+    };
+
+    // Append immediately & clear input
+    setComments((prev) => [...prev, optimisticComment]);
+    setContent("");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(DRAFT_KEY);
+    }
+
+    const formData = new FormData();
+    formData.append("content", commentText);
+
+    // 2. Background Server Action
     startTransition(async () => {
       const res = await createCommentAction(postId, { error: null }, formData);
       if (res.error) {
+        // Rollback on error
+        setComments((prev) => prev.filter((c) => c.id !== tempId));
+        setContent(commentText);
         setError(res.error);
-      } else {
-        setContent("");
       }
     });
   };
 
   const handleDelete = (commentId: number) => {
     if (confirm("이 댓글을 삭제하시겠습니까?")) {
+      const prevComments = [...comments];
+      // Optimistic delete
+      setComments((prev) =>
+        isAdmin
+          ? prev.map((c) => (c.id === commentId ? { ...c, deleted_at: new Date().toISOString() } : c))
+          : prev.filter((c) => c.id !== commentId)
+      );
+
       startTransition(async () => {
-        await deleteCommentAction(commentId, postId);
+        const res = await deleteCommentAction(commentId, postId);
+        if (res?.error) {
+          // Rollback on error
+          setComments(prevComments);
+          alert(res.error);
+        }
       });
     }
   };
 
   const handleRestore = (commentId: number) => {
     if (confirm("삭제된 댓글을 복구하시겠습니까?")) {
+      const prevComments = [...comments];
+      // Optimistic restore
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, deleted_at: null } : c))
+      );
+
       startTransition(async () => {
-        await restoreCommentAction(commentId, postId);
+        const res = await restoreCommentAction(commentId, postId);
+        if (res?.error) {
+          // Rollback on error
+          setComments(prevComments);
+          alert(res.error);
+        }
       });
     }
   };
@@ -92,22 +182,17 @@ export function CommentSection({
             <input
               type="text"
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => handleContentChange(e.target.value)}
               placeholder="따뜻한 댓글을 남겨보세요..."
               maxLength={1000}
-              disabled={isPending}
               className="flex-1 h-11 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             />
             <Button
               type="submit"
-              disabled={isPending || !content.trim()}
+              disabled={!content.trim()}
               className="h-11 px-4 gap-1.5 font-bold bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
+              <Send className="h-4 w-4" />
               <span className="hidden sm:inline">등록</span>
             </Button>
           </div>
@@ -178,7 +263,6 @@ export function CommentSection({
                     {!isDeleted && (isAuthor || isAdmin) && (
                       <button
                         onClick={() => handleDelete(comment.id)}
-                        disabled={isPending}
                         className="p-1 rounded text-zinc-400 hover:text-red-500 transition-colors"
                         title="댓글 삭제"
                       >
@@ -188,7 +272,6 @@ export function CommentSection({
                     {isDeleted && isAdmin && (
                       <button
                         onClick={() => handleRestore(comment.id)}
-                        disabled={isPending}
                         className="p-1 rounded text-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-950/40 transition-colors"
                         title="댓글 복구"
                       >

@@ -16,7 +16,7 @@ import {
   ThumbsUp,
   Flame,
 } from "lucide-react";
-import { Post, Comment, UserRole } from "@/types";
+import { Post, Comment, Profile, UserRole } from "@/types";
 import { deletePostAction, restorePostAction, recommendPostAction } from "@/app/actions/post";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,7 @@ interface PostDetailViewProps {
   comments: Comment[];
   currentUserId?: string | null;
   currentUserRole?: UserRole | null;
+  currentUserProfile?: Profile | null;
 }
 
 export function PostDetailView({
@@ -38,6 +39,7 @@ export function PostDetailView({
   comments,
   currentUserId,
   currentUserRole,
+  currentUserProfile,
 }: PostDetailViewProps) {
   const router = useRouter();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -53,12 +55,20 @@ export function PostDetailView({
   const images = post.image_urls || [];
 
   const handleRecommend = () => {
+    if (isLiked) return;
+    const prevLikes = likes;
+    // Optimistic UI: immediately increment and mark liked
+    setLikes((prev) => prev + 1);
+    setIsLiked(true);
+
     startRecommendTransition(async () => {
       const res = await recommendPostAction(post.id);
       if (res.success && res.newLikeCount !== undefined) {
         setLikes(res.newLikeCount);
-        setIsLiked(true);
       } else if (res.error) {
+        // Rollback on failure
+        setLikes(prevLikes);
+        setIsLiked(false);
         alert(res.error);
       }
     });
@@ -304,6 +314,7 @@ export function PostDetailView({
             comments={comments}
             currentUserId={currentUserId}
             currentUserRole={currentUserRole}
+            currentUserProfile={currentUserProfile}
           />
         </CardContent>
       </Card>

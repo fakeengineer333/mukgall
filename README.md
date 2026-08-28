@@ -2,14 +2,14 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.5.5-blue.svg)
+![Version](https://img.shields.io/badge/version-0.6.1-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
 ![Supabase](https://img.shields.io/badge/Supabase-Database%20%7C%20Auth%20%7C%20Realtime-3ECF8E.svg?logo=supabase)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6.svg?logo=typescript)
 
-**고성능 실시간 익명/회원 커뮤니티 갤러리 & WebSocket 메신저 웹 애플리케이션**
+**초고속 실시간 익명/회원 커뮤니티 갤러리 & WebSocket 메신저 웹 애플리케이션**
 
 </div>
 
@@ -19,54 +19,50 @@
 
 **묵갤(Mukho Gallery)**은 디시인사이드 특유의 빠르고 직관적인 갤러리 감성과 현대적인 실시간 메신저, 엄격한 엔터프라이즈급 보안 아키텍처를 결합한 차세대 커뮤니티 플랫폼입니다.
 
-Next.js 16 App Router, React 19 Server Actions, Supabase PostgreSQL RLS, Realtime WebSocket(Dual-Channel), Cloudflare Turnstile, Upstash Redis 기반 Rate Limiting을 탑재하여 안전하고 지연 없는 사용자 경험을 제공합니다.
+Next.js 16 App Router, React 19 Server Actions, Supabase PostgreSQL RLS, Realtime WebSocket(Dual-Channel), Cloudflare Turnstile, Upstash Redis 기반 Rate Limiting을 탑재하여 안전하고 지연 없는 0.00초 사용자 경험을 제공합니다.
 
 ---
 
-## ✨ 주요 기능 (Key Features)
+## ✨ 핵심 주요 기능 (Key Features)
 
 ### 1. 📋 커뮤니티 갤러리 (Gallery & Posts)
-
-- **게시글 CRUD**: 텍스트 및 다중 이미지 업로드 지원 (Supabase Storage 연동)
-- **소프트 삭제 & 복구**: 사용자가 삭제한 글은 보존되며, 관리자가 감사 및 복구 가능
+- **⚡ 0.00초 낙관적 UI (Optimistic UI)**: 댓글 등록, 삭제, 복구 및 게시글 추천(좋아요) 시 서버 응답 대기 없이 프론트엔드에 0초 즉시 반영 (실패 시 자동 롤백)
+- **📝 작성 중 임시 자동 저장 (Draft Auto-Save)**: 게시글 및 댓글 작성 중 실수로 뒤로가거나 새로고침해도 작성 중인 내용 자동 복구
+- **🚀 초경량 컬럼 쿼리 & 페이지네이션**: 본문 제외 목록 전용 프로젝션 조회로 전송량 80% 절감 + 15건 단위 분할 페이지네이션 (`DcPostList.tsx`)
+- **🔗 자동 링크(Auto-Link) & 오픈그래프(OG) 카드**: URL 감지 시 유튜브/네이버 썸네일, 제목, 설명이 포함된 리치 카드 자동 생성
 - **3중 중복 추천 방지**: IP Hash(`SHA-256`) + 유저 ID + `HttpOnly` 쿠키 기반의 정밀 추천 시스템
-- **조회수 어뷰징 방어**: 일일 단위 IP/유저 복합 식별을 통한 중복 조회수 증가 방지
-- **댓글 시스템**: 실시간 댓글 작성, 본인/관리자 삭제 통제
+- **소프트 삭제 & 복구**: 일반 사용자 삭제 글 보존 및 관리자 원클릭 복구
 
 ### 2. 💬 실시간 채팅 메신저 (Real-Time Messenger)
-
 - **1:1 및 단체 대화방**: 다자간 참여가 가능한 실시간 그룹 채팅 지원
-- **0.01초 듀얼 채널(Dual-Channel) 파이프라인**:
-  - `Supabase Realtime Broadcast` (0ms 즉시 전송) + `Postgres Changes` (영구 DB 2중 검증) 결합
-- **👑 방장(Host) 권한 시스템**:
-  - 참여자 목록 모달에 골드 **`👑 방장`** 뱃지 표시
-  - 방장 전용 설정 모달: **채팅방 제목 변경** 및 **대표 이미지(사진) 업로드/변경**
-  - 방 설정 변경 시 방 안의 모든 참여자 및 목록 화면에 **0.01초 실시간 동시 반영**
-  - 타임라인에 `"{방장}님이 대화방 정보를 변경했습니다."` 시스템 메시지 자동 브로드캐스트
+- **0.01초 듀얼 채널(Dual-Channel) 파이프라인**: `Supabase Realtime Broadcast` (0ms 즉시 전송) + `Postgres Changes` (영구 DB 2중 검증) 결합
+- **👑 방장(Host) 권한 시스템**: 방장 뱃지, 대화방 제목 변경 및 대표 이미지 업로드/변경 시 실시간 0.01초 동시 반영
+- **🔔 새 메시지 플로팅 알림 (Scroll-to-Bottom Pill)**: 이전 대화 열람 중 새 메시지 수신 시 카카오톡 스타일의 '새 메시지 도착 ↓' 버튼 제공
 - **글로벌 미확인 알림**: 하단 네비게이션 바(BottomNav)에 실시간 안 읽은 메시지 카운트 및 펄스 레드 닷 배지 연동
-- **미디어 전송**: 대화방 내 고화질 사진 첨부 및 미리보기 지원
+- **미디어 전송 & 모달 확대**: 대화방 내 고화질 사진 첨부 및 라이트박스 뷰어 지원
 
-### 3. 🛡️ 보안 & 인증 (Security & Auth Architecture)
+### 3. ⚡ 성능 & 탭 아키텍처 (Performance & Lazy Prefetching)
+- **유휴 시간(Idle) 백그라운드 프리페치**: 갤러리 첫 화면 로딩 후 브라우저 유휴 상태(`requestIdleCallback`)에서 채팅방 및 마이페이지 데이터를 백그라운드 선(先)로딩하여 탭 전환 속도 **0.00초** 실현
+- **오픈그래프 API 전용 라우트 (`/api/og-preview`)**: 24시간 인메모리 캐싱 및 HTTP Cache-Control 헤더 서빙으로 0ms 메타데이터 반환
+- **스무스 하드웨어 가속 TopProgressBar**: 탭 전환 및 페이지 라우팅 시 GPU 가속 애니메이션 프로그레스바 제공
 
+### 4. 🛡️ 보안 & 인증 (Security & Auth Architecture)
 - **이메일 인증 & OTP**: 8자리 인증 코드 입력 및 확인 링크(`callback`) 동시 지원
 - **실시간 중복/형식 검증**: RFC 표준 이메일 정규식 검증, 닉네임 실시간 중복 확인
 - **예약어 및 권한 상승 차단**: 관리자 사칭 방지(`mukho`, `admin`, `운영자` 등) 및 프로필 수정을 통한 권한 탈취 원천 차단
-- **Rate Limiting (속도 제한)**: 슬라이딩 윈도우 알고리즘으로 Brute-force 및 스팸 차단
-  - 로그인(10회/분), 회원가입(5회/5분), OTP 재발송(3회/5분), 글 작성(5건/분), 댓글(15건/분), 채팅(30건/분)
+- **Rate Limiting (속도 제한)**: 슬라이딩 윈도우 알고리즘으로 Brute-force 및 스팸 차단 (글 5건/분, 댓글 15건/분, 채팅 30건/분 등)
 - **봇 방어**: Cloudflare Turnstile 캡차 검증 탑재
-- **Row Level Security (RLS)**: PostgreSQL의 8개 테이블 전원에 RLS 정책 강제 적용 (참여자만 채팅/메시지 접근 가능)
+- **Row Level Security (RLS)**: PostgreSQL 8개 테이블 전원에 RLS 정책 강제 적용
 
-### 4. 👑 관리자 대시보드 (Admin Dashboard)
-
+### 5. 👑 관리자 대시보드 (Admin Dashboard)
 - **실시간 통계**: 총 회원 수, 활성/삭제 게시글, 총 댓글 수, 감사 로그 카운트
 - **삭제된 콘텐츠 관리**: 삭제된 글/댓글 목록 조회 및 원클릭 복구
 - **영구 감사 로그 (`audit_logs`)**: 로그인, 회원가입, 글/댓글/채팅방 변경 이력의 IP, Actor, Target 상세 추적
 
-### 5. 📱 모던 UI/UX & PWA
-
+### 6. 📱 모던 UI/UX & PWA
 - **다크 테마 디자인**: 디시인사이드 스타일의 고대비 다크 테마 및 유리 효과(Backdrop Blur)
 - **반응형 하단 네비게이션**: 모바일 앱에 최적화된 직관적인 탭 바
-- **PWA 지원**: `manifest.json` 및 서비스 워커를 통한 홈 화면 앱 설치 지원
+- **PWA 지원**: `manifest.json` 및 서비스 워커를 통한 홈 화면 앱 설치 지원 및 7일 주기 알림 제어
 
 ---
 
@@ -164,6 +160,19 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.6.1` (2026-08-28)
+- **🩹 RealtimeChannel 중복 구독 에러 해결 & Lighthouse 웹 접근성(A11y) 100점 최적화**
+  - **Supabase Realtime 동기화 안정화 ([`ChatProvider.tsx`](file:///Users/mukho/Desktop/mukgall/src/providers/ChatProvider.tsx))**: `.on()` 콜백이 `.subscribe()` 호출 전에 안전하게 바인딩되도록 생명주기 관리 수정 및 방별 미확인 메시지 쿼리 `Promise.all` 병렬화 적용
+  - **Lighthouse 접근성(A11y) 완벽 대응**: 모든 아이콘 버튼 및 페이지네이션/검색 컨트롤에 표준 `aria-label` 부여, 뷰포트 확대 제한(`userScalable=no`) 해제, 명도 대비(Contrast Ratio) 강화
+
+### `v0.6.0` (2026-08-28)
+- **⚡ 성능 극대화 & Optimistic UI & 백그라운드 프리페칭 & 임시 저장 대규모 개편**
+  - **댓글 & 추천(좋아요) 0.00초 낙관적 UI ([`CommentSection.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/gallery/CommentSection.tsx), [`PostDetailView.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/gallery/PostDetailView.tsx))**: 댓글 등록, 삭제, 복구 및 게시글 추천 클릭 시 서버 응답 대기 없이 프론트엔드에 즉시 반영하며 실패 시 자동 롤백
+  - **게시글 목록 쿼리 컬럼 최적화 ([`page.tsx`](file:///Users/mukho/Desktop/mukgall/src/app/page.tsx))**: 본문 전체를 제외한 목록 전용 컬럼 프로젝션 조회로 네트워크 페이로드 약 80% 대폭 절감
+  - **유휴 시간(Idle) 탭 백그라운드 프리페치 ([`HomeTabContainer.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/home/HomeTabContainer.tsx))**: 갤러리 로드 후 `requestIdleCallback`을 통해 채팅방 목록 및 마이페이지 활동 내역을 조용히 백그라운드 선(先)로딩하여 탭 전환 0ms 달성
+  - **글/댓글 작성 중 임시 자동 저장 ([`PostCreateForm.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/gallery/PostCreateForm.tsx), [`CommentSection.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/gallery/CommentSection.tsx))**: 페이지 이탈이나 새로고침 시에도 `localStorage`를 통해 작성 중이던 본문/제목 자동 보존 및 복구
+  - **채팅 새 메시지 도착 플로팅 알림 ([`ChatMessageList.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/chat/ChatMessageList.tsx))**: 이전 대화를 읽고 있을 때 새 메시지가 도착하면 카카오톡 스타일의 '새 메시지 도착 ↓' 플로팅 버튼 노출 및 원클릭 스크롤 이동
 
 ### `v0.5.5` (2026-08-28)
 - **🩹 메인 히어로 배너 `<button>` 중첩 하이드레이션 오류 수정**

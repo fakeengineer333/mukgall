@@ -51,6 +51,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
         comments={typedComments}
         currentUserId={user?.id || null}
         currentUserRole={userProfile?.role || null}
+        currentUserProfile={userProfile || null}
       />
     </div>
   );

@@ -37,10 +37,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   const isAdmin = userProfile?.role === "ADMIN";
 
-  // Build Supabase query for Gallery posts
+  // Build Supabase query for Gallery posts (Optimized column projection)
   let postsQuery = supabase
     .from("posts")
-    .select("*, author:profiles(*), comments:comments(id)", { count: "exact" });
+    .select(
+      "id, title, author_id, created_at, view_count, like_count, image_urls, deleted_at, author:profiles(id, username, avatar_url, role), comments:comments(id)",
+      { count: "exact" }
+    );
 
   if (!isAdmin) {
     postsQuery = postsQuery.is("deleted_at", null);

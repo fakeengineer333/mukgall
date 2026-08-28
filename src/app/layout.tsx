@@ -36,8 +36,6 @@ export const viewport: Viewport = {
   themeColor: "#09090b",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
 };
 
@@ -50,6 +48,10 @@ export default async function RootLayout({
 
   return (
     <html lang="ko" className="h-full antialiased font-sans" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://hlligntpburfectcfycc.supabase.co" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://hlligntpburfectcfycc.supabase.co" />
+      </head>
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 selection:bg-blue-600 selection:text-white transition-colors" suppressHydrationWarning>
         <ChatProvider currentUserId={userProfile?.id}>
           <Suspense fallback={null}>

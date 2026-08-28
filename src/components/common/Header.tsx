@@ -73,6 +73,7 @@ export function Header({ userProfile }: HeaderProps) {
               <Link
                 href="/mypage"
                 onClick={handleMyPageClick}
+                aria-label="마이페이지로 이동"
                 className="flex items-center gap-2 rounded-full p-0.5 hover:ring-2 hover:ring-blue-500 transition-all select-none cursor-pointer"
               >
                 <Avatar

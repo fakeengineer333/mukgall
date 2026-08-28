@@ -65,34 +65,42 @@ export function HomeTabContainer({
     }
   }, [initialView]);
 
-  // On-demand fetch for Chat tab when first clicked
+  // Idle Background Prefetching: Quietly prefetch Chat & MyPage in the background when browser is idle
   useEffect(() => {
-    if (activeView === "chat" && userProfile && !chatLoaded && !loadingChat) {
-      setLoadingChat(true);
-      fetchUserChatRoomsAction()
-        .then((data) => {
-          setRooms(data);
-          setChatLoaded(true);
-          setLoadingChat(false);
-        })
-        .catch(() => setLoadingChat(false));
-    }
-  }, [activeView, userProfile, chatLoaded, loadingChat]);
+    if (!userProfile) return;
 
-  // On-demand fetch for MyPage tab when first clicked
-  useEffect(() => {
-    if (activeView === "mypage" && userProfile && !myPageLoaded && !loadingMyPage) {
-      setLoadingMyPage(true);
-      fetchUserActivityAction()
-        .then((data) => {
-          setUserPosts(data.posts);
-          setUserComments(data.comments);
-          setMyPageLoaded(true);
-          setLoadingMyPage(false);
-        })
-        .catch(() => setLoadingMyPage(false));
+    const prefetchIdle = () => {
+      // 1. Prefetch Chat Rooms in background
+      if (!chatLoaded && !loadingChat) {
+        fetchUserChatRoomsAction()
+          .then((data) => {
+            setRooms(data);
+            setChatLoaded(true);
+          })
+          .catch(() => {});
+      }
+
+      // 2. Prefetch MyPage Activity in background
+      if (!myPageLoaded && !loadingMyPage) {
+        fetchUserActivityAction()
+          .then((data) => {
+            setUserPosts(data.posts);
+            setUserComments(data.comments);
+            setMyPageLoaded(true);
+          })
+          .catch(() => {});
+      }
+    };
+
+    // Use requestIdleCallback if supported, else setTimeout
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const handle = (window as any).requestIdleCallback(prefetchIdle, { timeout: 1500 });
+      return () => (window as any).cancelIdleCallback(handle);
+    } else {
+      const timer = setTimeout(prefetchIdle, 600);
+      return () => clearTimeout(timer);
     }
-  }, [activeView, userProfile, myPageLoaded, loadingMyPage]);
+  }, [userProfile, chatLoaded, myPageLoaded, loadingChat, loadingMyPage]);
 
   // Listen to browser Back / Forward (PopState)
   useEffect(() => {

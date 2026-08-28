@@ -181,7 +181,7 @@ export function DcPostList({
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60 text-zinc-700 dark:text-zinc-300">
               {posts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-16 text-center text-zinc-500 text-xs">
+                  <td colSpan={6} className="py-16 text-center text-zinc-600 dark:text-zinc-400 text-xs">
                     등록된 게시글이 없습니다.
                   </td>
                 </tr>
@@ -200,7 +200,7 @@ export function DcPostList({
                       }`}
                     >
                       {/* 번호 */}
-                      <td className="py-2.5 px-3 text-center font-mono text-zinc-500 text-[11px]">
+                      <td className="py-2.5 px-3 text-center font-mono text-zinc-600 dark:text-zinc-400 text-[11px]">
                         {post.id}
                       </td>
 
@@ -252,13 +252,13 @@ export function DcPostList({
                       {/* 작성일 */}
                       <td
                         suppressHydrationWarning
-                        className="py-2.5 px-3 text-center text-zinc-500 dark:text-zinc-400 text-[11px] whitespace-nowrap"
+                        className="py-2.5 px-3 text-center text-zinc-600 dark:text-zinc-400 text-[11px] whitespace-nowrap"
                       >
                         {post.formatted_date || formatDcDate(post.created_at)}
                       </td>
 
                       {/* 조회 */}
-                      <td className="py-2.5 px-3 text-center font-mono text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      <td className="py-2.5 px-3 text-center font-mono text-zinc-600 dark:text-zinc-400 text-[11px]">
                         {post.view_count}
                       </td>
 
@@ -267,13 +267,13 @@ export function DcPostList({
                         <span
                           className={
                             (post.like_count || 0) >= 3
-                              ? "text-amber-400 font-black inline-flex items-center gap-0.5"
+                              ? "text-amber-500 dark:text-amber-400 font-black inline-flex items-center gap-0.5"
                               : (post.like_count || 0) > 0
-                              ? "text-zinc-300"
-                              : "text-zinc-500"
+                              ? "text-zinc-700 dark:text-zinc-300"
+                              : "text-zinc-600 dark:text-zinc-400"
                           }
                         >
-                          {(post.like_count || 0) >= 3 && <Flame className="h-3 w-3 text-amber-400" />}
+                          {(post.like_count || 0) >= 3 && <Flame className="h-3 w-3 text-amber-500 dark:text-amber-400" />}
                           {post.like_count || 0}
                         </span>
                       </td>
@@ -288,7 +288,7 @@ export function DcPostList({
         {/* Mobile Compact List View */}
         <div className="sm:hidden divide-y divide-zinc-200 dark:divide-zinc-800/60">
           {posts.length === 0 ? (
-            <div className="py-12 text-center text-zinc-500 text-xs">
+            <div className="py-12 text-center text-zinc-600 dark:text-zinc-400 text-xs">
               등록된 게시글이 없습니다.
             </div>
           ) : (
@@ -304,7 +304,7 @@ export function DcPostList({
                   className="block p-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors space-y-1.5"
                 >
                   <div className="flex items-start gap-1.5">
-                    <span className="text-[11px] font-mono text-zinc-500 shrink-0">
+                    <span className="text-[11px] font-mono text-zinc-600 dark:text-zinc-400 shrink-0">
                       {post.id}
                     </span>
                     {hasImage && (
@@ -327,16 +327,16 @@ export function DcPostList({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-zinc-500">
+                  <div className="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400">
                     <div className="flex items-center gap-1">
-                      <span className="text-zinc-700 dark:text-zinc-400">{post.author?.username || "ㅇㅇ"}</span>
+                      <span className="text-zinc-700 dark:text-zinc-300">{post.author?.username || "ㅇㅇ"}</span>
                       <span>•</span>
                       <span suppressHydrationWarning>{post.formatted_date || formatDcDate(post.created_at)}</span>
                     </div>
 
                     <div className="flex items-center gap-2.5 font-mono">
                       <span>조회 {post.view_count}</span>
-                      <span className={(post.like_count || 0) > 0 ? "text-amber-500 dark:text-amber-400 font-bold" : ""}>
+                      <span className={(post.like_count || 0) > 0 ? "text-amber-600 dark:text-amber-400 font-bold" : ""}>
                         추천 {post.like_count || 0}
                       </span>
                     </div>
@@ -352,10 +352,11 @@ export function DcPostList({
       <div className="flex flex-col items-center gap-4 pt-2">
         {/* Pagination Bar */}
         {totalPages > 1 && (
-          <div className="flex items-center gap-1 select-none">
+          <div className="flex items-center gap-1 select-none" role="navigation" aria-label="게시판 페이지 네비게이션">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage <= 1}
+              aria-label="이전 페이지로 이동"
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -365,10 +366,12 @@ export function DcPostList({
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
+                aria-label={`${page}페이지로 이동`}
+                aria-current={currentPage === page ? "page" : undefined}
                 className={`flex h-8 min-w-8 px-2 items-center justify-center rounded-lg text-xs font-bold transition-all ${
                   currentPage === page
                     ? "bg-blue-600 text-white shadow"
-                    : "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    : "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 }`}
               >
                 {page}
@@ -378,6 +381,7 @@ export function DcPostList({
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage >= totalPages}
+              aria-label="다음 페이지로 이동"
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
@@ -388,10 +392,11 @@ export function DcPostList({
         {/* Search Bar & Write Button */}
         <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-3 pt-2">
           {/* DC Search Form */}
-          <form onSubmit={handleSearchSubmit} className="flex items-center gap-1.5 w-full sm:w-auto">
+          <form onSubmit={handleSearchSubmit} className="flex items-center gap-1.5 w-full sm:w-auto" role="search">
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
+              aria-label="검색 유형 선택"
               className="h-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">전체</option>
@@ -405,11 +410,18 @@ export function DcPostList({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="검색어 입력..."
+                aria-label="검색어 입력"
                 className="h-9 text-xs pl-3 pr-8 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
               />
             </div>
 
-            <Button type="submit" size="sm" variant="secondary" className="h-9 px-3 text-xs font-semibold">
+            <Button
+              type="submit"
+              size="sm"
+              variant="secondary"
+              aria-label="게시글 검색"
+              className="h-9 px-3 text-xs font-semibold"
+            >
               <Search className="h-3.5 w-3.5" />
             </Button>
           </form>

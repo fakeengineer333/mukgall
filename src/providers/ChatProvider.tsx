@@ -70,7 +70,7 @@ export function ChatProvider({
     }
   }, [pathname]);
 
-  // Query database for all unread counts per room
+  // Query database for all unread counts per room (in parallel)
   const refreshUnread = useCallback(async () => {
     if (!currentUserId) return;
 
@@ -89,23 +89,28 @@ export function ChatProvider({
         return;
       }
 
+      // Parallelize unread count queries across all rooms
+      const results = await Promise.all(
+        participations.map(async (part: any) => {
+          const rId = part.room_id;
+          const lastRead = part.last_read_at || "1970-01-01T00:00:00Z";
+
+          const { count } = await supabase
+            .from("messages")
+            .select("id", { count: "exact", head: true })
+            .eq("room_id", rId)
+            .neq("sender_id", currentUserId)
+            .gt("created_at", lastRead);
+
+          return { roomId: rId, count: count || 0 };
+        })
+      );
+
       let total = 0;
       const newMap: Record<string, number> = {};
-
-      for (const part of participations) {
-        const rId = (part as any).room_id;
-        const lastRead = (part as any).last_read_at || "1970-01-01T00:00:00Z";
-
-        const { count } = await supabase
-          .from("messages")
-          .select("id", { count: "exact", head: true })
-          .eq("room_id", rId)
-          .neq("sender_id", currentUserId)
-          .gt("created_at", lastRead);
-
-        const roomCount = count || 0;
-        newMap[rId] = roomCount;
-        total += roomCount;
+      for (const res of results) {
+        newMap[res.roomId] = res.count;
+        total += res.count;
       }
 
       setUnreadRoomsMap(newMap);
@@ -165,14 +170,20 @@ export function ChatProvider({
     if (!currentUserId) return;
 
     const supabase = createClient();
-    let channel: any = null;
+    let isCancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const channelName = `global_chat_provider_${currentUserId}`;
 
     async function setupRealtime() {
       // Authenticate Realtime socket before subscribing
       const { data: { session } } = await supabase.auth.getSession();
+      if (isCancelled) return;
+
       if (session?.access_token) {
         await supabase.realtime.setAuth(session.access_token);
       }
+      if (isCancelled) return;
 
       const handleIncomingMessage = async (newMsg: Message) => {
         if (!newMsg || !newMsg.room_id || newMsg.sender_id === currentUserId) return;
@@ -219,8 +230,10 @@ export function ChatProvider({
         }
       };
 
-      channel = supabase
-        .channel(`global_chat_provider_${currentUserId}_${Date.now()}`)
+      // Create new channel and attach all listeners BEFORE subscribing
+      channel = supabase.channel(channelName);
+
+      channel
         .on(
           "postgres_changes",
           {
@@ -253,6 +266,7 @@ export function ChatProvider({
     setupRealtime();
 
     return () => {
+      isCancelled = true;
       if (channel) {
         supabase.removeChannel(channel);
       }
@@ -263,11 +277,7 @@ export function ChatProvider({
   useEffect(() => {
     if (currentUserId && isNotificationSupported() && Notification.permission === "default") {
       const handleFirstClick = () => {
-        Notification.requestPermission().then((p) => {
-          if (p === "granted") {
-            localStorage.setItem("mukgall_notifications_enabled", "true");
-          }
-        });
+        Notification.requestPermission();
         window.removeEventListener("click", handleFirstClick);
       };
       window.addEventListener("click", handleFirstClick, { once: true });
@@ -277,28 +287,18 @@ export function ChatProvider({
     }
   }, [currentUserId]);
 
-  const contextValue = React.useMemo(
-    () => ({
-      unreadCount,
-      unreadRoomsMap,
-      activeRoomId,
-      latestMessage,
-      setActiveRoomId,
-      markRoomAsRead,
-      refreshUnread,
-    }),
-    [
-      unreadCount,
-      unreadRoomsMap,
-      activeRoomId,
-      latestMessage,
-      markRoomAsRead,
-      refreshUnread,
-    ]
-  );
-
   return (
-    <ChatContext.Provider value={contextValue}>
+    <ChatContext.Provider
+      value={{
+        unreadCount,
+        unreadRoomsMap,
+        activeRoomId,
+        latestMessage,
+        setActiveRoomId,
+        markRoomAsRead,
+        refreshUnread,
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );

@@ -135,7 +135,7 @@ export function BottomNav({ userRole }: BottomNavProps) {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-lg pb-[env(safe-area-inset-bottom)] transition-colors">
+    <nav aria-label="하단 메뉴 네비게이션" className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-lg pb-[env(safe-area-inset-bottom)] transition-colors">
       <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -145,6 +145,7 @@ export function BottomNav({ userRole }: BottomNavProps) {
               href={item.href}
               onClick={item.onClick}
               prefetch={true}
+              aria-label={item.label}
               className={cn(
                 "relative flex flex-col items-center justify-center py-1 px-3 text-xs font-medium transition-all select-none cursor-pointer",
                 item.active

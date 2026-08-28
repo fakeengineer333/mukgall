@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown } from "lucide-react";
 import { Message, Profile } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/ui/avatar";
@@ -58,6 +58,8 @@ export function ChatMessageList({
   const [participants, setParticipants] = useState<ParticipantReadInfo[]>(initialParticipants);
   const [hasMore, setHasMore] = useState(initialMessages.length >= 30);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [unreadNewCount, setUnreadNewCount] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -202,6 +204,14 @@ export function ChatMessageList({
     if (target.scrollTop < 60 && hasMore && !loadingOlder) {
       loadOlderMessages();
     }
+
+    const distanceFromBottom = target.scrollHeight - target.scrollTop - target.clientHeight;
+    if (distanceFromBottom > 180) {
+      setShowScrollBottom(true);
+    } else {
+      setShowScrollBottom(false);
+      setUnreadNewCount(0);
+    }
   };
 
   // Catch-up sync: fetch any messages created after latest known message
@@ -278,6 +288,17 @@ export function ChatMessageList({
         }
 
         if (prev.some((m) => m.id === msg.id)) return prev;
+
+        // Check if user is scrolled up; if so, bump unread pill count
+        const container = scrollContainerRef.current;
+        if (container && msg.sender_id !== currentUserId) {
+          const isFar = container.scrollHeight - container.scrollTop - container.clientHeight > 180;
+          if (isFar) {
+            setShowScrollBottom(true);
+            setUnreadNewCount((count) => count + 1);
+          }
+        }
+
         return [...prev, msg];
       });
       markRoomAsRead(roomId);
@@ -534,6 +555,26 @@ export function ChatMessageList({
       })}
 
       <div ref={messagesEndRef} />
+
+      {/* Floating Scroll to Bottom & New Message Alert Pill */}
+      {showScrollBottom && (
+        <div className="sticky bottom-3 z-30 flex justify-center pointer-events-none">
+          <button
+            type="button"
+            onClick={() => {
+              scrollToBottom();
+              setShowScrollBottom(false);
+              setUnreadNewCount(0);
+            }}
+            className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 text-xs font-bold shadow-xl shadow-blue-600/40 backdrop-blur-md transition-all active:scale-95 border border-blue-400/40 select-none animate-in fade-in slide-in-from-bottom-2 duration-200 cursor-pointer"
+          >
+            <ChevronDown className="h-4 w-4" />
+            <span>
+              {unreadNewCount > 0 ? `새 메시지 ${unreadNewCount}개 도착 ↓` : "맨 아래로 이동"}
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Image Modal Lightbox */}
       {previewImage && (
