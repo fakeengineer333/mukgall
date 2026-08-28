@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, isServiceRoleConfigured } from "@/lib/supabase/admin";
 import { AuditLog, Post, Comment, Profile } from "@/types";
 
 export interface AdminStatsData {
@@ -30,7 +30,8 @@ export async function getAdminStatsAction(): Promise<{ success: boolean; data?: 
     return { success: false, error: "관리자 권한이 필요합니다." };
   }
 
-  const adminClient = createAdminClient();
+  const hasServiceRole = isServiceRoleConfigured();
+  const db = hasServiceRole ? createAdminClient() : supabase;
 
   const [
     { count: totalUsers },
@@ -39,11 +40,11 @@ export async function getAdminStatsAction(): Promise<{ success: boolean; data?: 
     { count: totalComments },
     { count: totalAuditLogs },
   ] = await Promise.all([
-    adminClient.from("profiles").select("*", { count: "exact", head: true }),
-    adminClient.from("posts").select("*", { count: "exact", head: true }).is("deleted_at", null),
-    adminClient.from("posts").select("*", { count: "exact", head: true }).not("deleted_at", "is", null),
-    adminClient.from("comments").select("*", { count: "exact", head: true }),
-    adminClient.from("audit_logs").select("*", { count: "exact", head: true }),
+    db.from("profiles").select("*", { count: "exact", head: true }),
+    db.from("posts").select("*", { count: "exact", head: true }).is("deleted_at", null),
+    db.from("posts").select("*", { count: "exact", head: true }).not("deleted_at", "is", null),
+    db.from("comments").select("*", { count: "exact", head: true }),
+    db.from("audit_logs").select("*", { count: "exact", head: true }),
   ]);
 
   return {
@@ -86,8 +87,10 @@ export async function fetchAuditLogsAction({
     return [];
   }
 
-  const adminClient = createAdminClient();
-  let query = adminClient
+  const hasServiceRole = isServiceRoleConfigured();
+  const db = hasServiceRole ? createAdminClient() : supabase;
+
+  let query = db
     .from("audit_logs")
     .select("*, actor:profiles(*)")
     .order("created_at", { ascending: false })

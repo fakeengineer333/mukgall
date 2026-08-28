@@ -50,7 +50,9 @@ export async function createChatRoomAction({
     return { success: false, error: "로그인이 필요합니다." };
   }
 
-  if (targetUserIds.length === 0) {
+  const isSelfChat = !isGroup && (targetUserIds.length === 0 || (targetUserIds.length === 1 && targetUserIds[0] === user.id));
+
+  if (!isSelfChat && targetUserIds.length === 0) {
     return { success: false, error: "대화할 상대를 최소 1명 이상 선택해주세요." };
   }
 
@@ -63,11 +65,31 @@ export async function createChatRoomAction({
 
   const myUsername = (myProfile as unknown as Profile)?.username || "사용자";
 
-  // If 1:1 chat (not group and 1 target user), check if room already exists
-  if (!isGroup && targetUserIds.length === 1) {
+  // If self chat, check if user already has a self chat room
+  if (isSelfChat) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: myRooms } = await (supabase.from("chat_participants") as any)
+      .select("room_id, chat_rooms!inner(is_group)")
+      .eq("user_id", user.id)
+      .eq("chat_rooms.is_group", false);
+
+    if (myRooms && myRooms.length > 0) {
+      for (const r of myRooms) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { count } = await (supabase.from("chat_participants") as any)
+          .select("*", { count: "exact", head: true })
+          .eq("room_id", r.room_id)
+          .is("left_at", null);
+
+        if (count === 1) {
+          return { success: true, roomId: r.room_id };
+        }
+      }
+    }
+  } else if (!isGroup && targetUserIds.length === 1) {
+    // If 1:1 chat (not group and 1 target user), check if room already exists between these 2 users
     const targetId = targetUserIds[0];
 
-    // Find if 1:1 room already exists between these 2 users
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: myRooms } = await (supabase.from("chat_participants") as any)
       .select("room_id, chat_rooms!inner(is_group)")
@@ -90,37 +112,43 @@ export async function createChatRoomAction({
     }
   }
 
-  const roomName = isGroup ? name?.trim() || `${myUsername}님의 그룹 대화방` : null;
+  const roomName = isSelfChat
+    ? "나와의 채팅"
+    : isGroup
+    ? name?.trim() || `${myUsername}님의 그룹 대화방`
+    : null;
 
-  // 1. Try atomic create_chat_room RPC function
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rpcRes, error: rpcErr } = await (supabase as any).rpc("create_chat_room", {
-      p_is_group: isGroup,
-      p_name: roomName,
-      p_participant_ids: targetUserIds,
-    });
+  // 1. Try atomic create_chat_room RPC function (only if not self-chat)
+  if (!isSelfChat) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: rpcRes, error: rpcErr } = await (supabase as any).rpc("create_chat_room", {
+        p_is_group: isGroup,
+        p_name: roomName,
+        p_participant_ids: targetUserIds,
+      });
 
-    if (!rpcErr && rpcRes) {
-      const parsed = typeof rpcRes === "string" ? JSON.parse(rpcRes) : rpcRes;
-      if (parsed.success && parsed.room_id) {
-        await recordAuditLog({
-          actorId: user.id,
-          action: "CHAT_ROOM_CREATE",
-          targetType: "chat_rooms",
-          targetId: parsed.room_id,
-          metadata: { isGroup, participantCount: targetUserIds.length + 1, roomName },
-        });
+      if (!rpcErr && rpcRes) {
+        const parsed = typeof rpcRes === "string" ? JSON.parse(rpcRes) : rpcRes;
+        if (parsed.success && parsed.room_id) {
+          await recordAuditLog({
+            actorId: user.id,
+            action: "CHAT_ROOM_CREATE",
+            targetType: "chat_rooms",
+            targetId: parsed.room_id,
+            metadata: { isGroup, participantCount: targetUserIds.length + 1, roomName },
+          });
 
-        revalidatePath("/chat");
-        return { success: true, roomId: parsed.room_id };
+          revalidatePath("/chat");
+          return { success: true, roomId: parsed.room_id };
+        }
       }
+    } catch (e) {
+      console.warn("[Chat] RPC create_chat_room notice:", e);
     }
-  } catch (e) {
-    console.warn("[Chat] RPC create_chat_room notice:", e);
   }
 
-  // 2. Direct client insert fallback
+  // 2. Direct client insert fallback / Self Chat creation
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let { data: newRoom, error: roomErr } = await (supabase.from("chat_rooms") as any)
     .insert({
@@ -138,7 +166,7 @@ export async function createChatRoomAction({
   const roomId = newRoom.id;
 
   // Add all participants (including creator)
-  const participantIds = Array.from(new Set([user.id, ...targetUserIds]));
+  const participantIds = isSelfChat ? [user.id] : Array.from(new Set([user.id, ...targetUserIds]));
   const participantsToInsert = participantIds.map((uid) => ({
     room_id: roomId,
     user_id: uid,
@@ -150,7 +178,9 @@ export async function createChatRoomAction({
   await (supabase.from("chat_participants") as any).insert(participantsToInsert);
 
   // Send initial system message
-  const systemContent = isGroup
+  const systemContent = isSelfChat
+    ? "나만의 비밀 메모, 사진, 링크 저장소가 생성되었습니다."
+    : isGroup
     ? `${myUsername}님이 단체 대화방을 개설했습니다.`
     : `대화가 시작되었습니다.`;
 
@@ -168,7 +198,7 @@ export async function createChatRoomAction({
     action: "CHAT_ROOM_CREATE",
     targetType: "chat_rooms",
     targetId: roomId,
-    metadata: { isGroup, participantCount: participantIds.length, roomName },
+    metadata: { isGroup, isSelfChat, participantCount: participantIds.length, roomName },
   });
 
   revalidatePath("/chat");
@@ -508,17 +538,22 @@ export async function fetchUserChatRoomsAction(): Promise<ChatRoom[]> {
       const myPart = myParticipations.find((p) => p.room_id === room.id);
       const roomParticipants = allParticipants.filter((p) => p.room_id === room.id);
       const otherParticipant = roomParticipants.find((p) => p.user_id !== user.id);
+      const isSelfChat = !room.is_group && (roomParticipants.length === 1 || !otherParticipant);
+      const myProfileObj = roomParticipants.find((p) => p.user_id === user.id)?.profile || null;
       const roomMessages = allMessages.filter((m) => m.room_id === room.id);
       const lastMessage = roomMessages[0] || null;
 
       const lastReadTime = myPart?.last_read_at ? new Date(myPart.last_read_at).getTime() : 0;
-      const unreadCount = roomMessages.filter(
-        (m) => m.sender_id !== user.id && new Date(m.created_at).getTime() > lastReadTime
-      ).length;
+      const unreadCount = isSelfChat
+        ? 0
+        : roomMessages.filter(
+            (m) => m.sender_id !== user.id && new Date(m.created_at).getTime() > lastReadTime
+          ).length;
 
       return {
         ...room,
-        otherUser: otherParticipant?.profile || null,
+        name: isSelfChat ? "나와의 채팅" : room.name,
+        otherUser: isSelfChat ? myProfileObj : otherParticipant?.profile || null,
         participantCount: roomParticipants.length,
         last_message: lastMessage,
         unread_count: unreadCount,

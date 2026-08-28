@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.6.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.7.1-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -27,6 +27,9 @@ Next.js 16 App Router, React 19 Server Actions, Supabase PostgreSQL RLS, Realtim
 
 ### 1. 📋 커뮤니티 갤러리 (Gallery & Posts)
 - **⚡ 0.00초 낙관적 UI (Optimistic UI)**: 댓글 등록, 삭제, 복구 및 게시글 추천(좋아요) 시 서버 응답 대기 없이 프론트엔드에 0초 즉시 반영 (실패 시 자동 롤백)
+- **👑 원글 작성자 본인 댓글 표시 (`작성자` 뱃지)**: 게시글 작성자가 단 댓글에 푸른색 `작성자` 전용 뱃지 부여
+- **📷 이미지 클립보드 붙여넣기(`Ctrl+V`) & 드래그 앤 드롭**: 캡처 도구 복사 이미지를 글 작성창에서 바로 붙여넣기 및 파일 드래그 업로드 지원
+- **💬 댓글 대댓글 (2-Depth 답글 스레드)**: 특정 댓글에 `↳ @작성자` 답글 달기, 자동 멘션, 인덴트 계층 렌더링 지원
 - **📝 작성 중 임시 자동 저장 (Draft Auto-Save)**: 게시글 및 댓글 작성 중 실수로 뒤로가거나 새로고침해도 작성 중인 내용 자동 복구
 - **🚀 초경량 컬럼 쿼리 & 페이지네이션**: 본문 제외 목록 전용 프로젝션 조회로 전송량 80% 절감 + 15건 단위 분할 페이지네이션 (`DcPostList.tsx`)
 - **🔗 자동 링크(Auto-Link) & 오픈그래프(OG) 카드**: URL 감지 시 유튜브/네이버 썸네일, 제목, 설명이 포함된 리치 카드 자동 생성
@@ -34,8 +37,11 @@ Next.js 16 App Router, React 19 Server Actions, Supabase PostgreSQL RLS, Realtim
 - **소프트 삭제 & 복구**: 일반 사용자 삭제 글 보존 및 관리자 원클릭 복구
 
 ### 2. 💬 실시간 채팅 메신저 (Real-Time Messenger)
+- **💬 나와의 채팅 (나만의 메모장)**: 카카오톡 '나와의 채팅'처럼 개인 메모, 사진, 링크를 비밀 보관할 수 있는 독립 저장소 방 지원
 - **1:1 및 단체 대화방**: 다자간 참여가 가능한 실시간 그룹 채팅 지원
 - **0.01초 듀얼 채널(Dual-Channel) 파이프라인**: `Supabase Realtime Broadcast` (0ms 즉시 전송) + `Postgres Changes` (영구 DB 2중 검증) 결합
+- **✍️ 실시간 상대방 입력 중 표시 (Typing Indicator)**: 대화 상대가 텍스트 입력 시 `"{닉네임}님이 입력 중..."` 애니메이션 말풍선 실시간 노출
+- **💬 메시지 인용 답장 (Quote Reply)**: 특정 말풍선을 선택하여 인용 박스가 포함된 답장 메시지 전송
 - **👑 방장(Host) 권한 시스템**: 방장 뱃지, 대화방 제목 변경 및 대표 이미지 업로드/변경 시 실시간 0.01초 동시 반영
 - **🔔 새 메시지 플로팅 알림 (Scroll-to-Bottom Pill)**: 이전 대화 열람 중 새 메시지 수신 시 카카오톡 스타일의 '새 메시지 도착 ↓' 버튼 제공
 - **글로벌 미확인 알림**: 하단 네비게이션 바(BottomNav)에 실시간 안 읽은 메시지 카운트 및 펄스 레드 닷 배지 연동
@@ -160,6 +166,18 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.7.1` (2026-08-28)
+- **💬 나와의 채팅(개인 메모장/저장소) & 게시글 본인 댓글 '작성자' 뱃지 표시**
+  - **👑 게시글 원글 작성자 본인 댓글 뱃지 ([`CommentSection.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/gallery/CommentSection.tsx), [`PostDetailView.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/gallery/PostDetailView.tsx))**: 게시글 작성자가 작성한 댓글에 푸른색 `작성자` 전용 뱃지 자동 부여
+  - **💬 나와의 채팅 (나만의 메모장/서랍장) ([`chat.ts`](file:///Users/mukho/Desktop/mukgall/src/app/actions/chat.ts), [`NewChatModal.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/chat/NewChatModal.tsx), [`ChatRoomList.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/chat/ChatRoomList.tsx), [`ChatRoomHeader.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/chat/ChatRoomHeader.tsx))**: 카카오톡 '나와의 채팅'처럼 개인 메모, 사진, 링크를 안전하게 보관할 수 있는 독립 대화방 개설 및 원클릭 바로가기 지원
+
+### `v0.7.0` (2026-08-28)
+- **🚀 4대 고급 인터랙션 UX 탑재 (이미지 붙여넣기, 댓글 대댓글, 실시간 입력 중, 인용 답장)**
+  - **📷 이미지 클립보드 붙여넣기(`Ctrl+V`) & 드래그 앤 드롭 ([`ImageUploader.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/gallery/ImageUploader.tsx))**: 스크린샷 캡처 후 `Ctrl+V` 즉시 업로드 및 드롭존 파일 드래그 앤 드롭 지원
+  - **💬 댓글 대댓글 2-Depth 스레드 ([`CommentSection.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/gallery/CommentSection.tsx))**: 특정 댓글 `[답글]` 클릭 시 답글 작성 바 활성화, 자동 멘션 및 인덴트 계층 렌더링 지원
+  - **✍️ 실시간 상대방 입력 중 표시 ([`ChatMessageInput.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/chat/ChatMessageInput.tsx), [`ChatMessageList.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/chat/ChatMessageList.tsx))**: Supabase Realtime Broadcast 기반 상대방 텍스트 입력 시 실시간 바운스 애니메이션 말풍선 노출
+  - **💬 실시간 채팅 인용 답장 ([`ChatMessageList.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/chat/ChatMessageList.tsx), [`FormattedText.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/common/FormattedText.tsx))**: 특정 말풍선 인용 선택 후 답장 전송 시 디스코드/카카오톡 스타일의 리치 인용 박스 렌더링
 
 ### `v0.6.1` (2026-08-28)
 - **🩹 RealtimeChannel 중복 구독 에러 해결 & Lighthouse 웹 접근성(A11y) 100점 최적화**

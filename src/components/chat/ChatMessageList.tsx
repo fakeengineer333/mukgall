@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown, CornerDownRight } from "lucide-react";
 import { Message, Profile } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/ui/avatar";
@@ -60,6 +60,7 @@ export function ChatMessageList({
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [unreadNewCount, setUnreadNewCount] = useState(0);
+  const [typingUsers, setTypingUsers] = useState<Record<string, { username: string; expiresAt: number }>>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -102,6 +103,25 @@ export function ChatMessageList({
       lastMsgTimeRef.current = messages[messages.length - 1].created_at;
     }
   }, [messages, scrollToBottom]);
+
+  // Periodic cleanup for typing indicator (expires after 3s)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setTypingUsers((prev) => {
+        const updated = { ...prev };
+        let changed = false;
+        for (const [uid, val] of Object.entries(updated)) {
+          if (val.expiresAt <= now) {
+            delete updated[uid];
+            changed = true;
+          }
+        }
+        return changed ? updated : prev;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // ⚡ 0.000s OPTIMISTIC MESSAGE LISTENER
   useEffect(() => {
@@ -147,31 +167,29 @@ export function ChatMessageList({
       if (!msg.created_at || participants.length === 0) return 0;
       const msgTime = new Date(msg.created_at).getTime();
 
-      // Count participants who haven't read this message yet (excluding the sender)
       return participants.filter(
         (p) =>
           p.user_id !== msg.sender_id &&
-          new Date(p.last_read_at || 0).getTime() < msgTime
+          (!p.last_read_at || new Date(p.last_read_at).getTime() < msgTime)
       ).length;
     },
     [participants]
   );
 
-  // Load older messages when scrolling to top
+  // Load older messages (infinite scroll up)
   const loadOlderMessages = useCallback(async () => {
     if (loadingOlder || !hasMore || messages.length === 0) return;
 
     setLoadingOlder(true);
+    const oldest = messages[0];
     const container = scrollContainerRef.current;
-    const prevScrollHeight = container ? container.scrollHeight : 0;
-    const prevScrollTop = container ? container.scrollTop : 0;
+    const prevScrollHeight = container?.scrollHeight || 0;
+    const prevScrollTop = container?.scrollTop || 0;
 
     try {
-      const oldestMsg = messages[0];
       const older = await fetchOlderMessagesAction({
         roomId,
-        beforeTimestamp: oldestMsg.created_at,
-        limit: 30,
+        beforeTimestamp: oldest.created_at,
       });
 
       if (older.length < 30) {
@@ -185,7 +203,6 @@ export function ChatMessageList({
           return [...toAdd, ...prev];
         });
 
-        // Maintain relative scroll position to avoid jump
         requestAnimationFrame(() => {
           if (container) {
             container.scrollTop = container.scrollHeight - prevScrollHeight + prevScrollTop;
@@ -257,11 +274,10 @@ export function ChatMessageList({
     };
   }, [syncNewMessages, roomId, markRoomAsRead]);
 
-  // Supabase WebSocket Realtime Subscription (Messages + Participant Read Updates)
+  // Supabase WebSocket Realtime Subscription (Messages + Read Updates + Typing Broadcast)
   useEffect(() => {
     const supabase = createClient();
 
-    // Authenticate Realtime socket with user's session JWT on load/refresh
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.access_token) {
         supabase.realtime.setAuth(session.access_token);
@@ -271,7 +287,6 @@ export function ChatMessageList({
     const addMessageSafely = (msg: Message & { sender?: Profile | null }) => {
       if (!msg || !msg.id) return;
       setMessages((prev) => {
-        // Reconcile optimistic message with real server message
         const optimisticIndex = prev.findIndex(
           (m) =>
             m.id === msg.id ||
@@ -289,7 +304,6 @@ export function ChatMessageList({
 
         if (prev.some((m) => m.id === msg.id)) return prev;
 
-        // Check if user is scrolled up; if so, bump unread pill count
         const container = scrollContainerRef.current;
         if (container && msg.sender_id !== currentUserId) {
           const isFar = container.scrollHeight - container.scrollTop - container.clientHeight > 180;
@@ -305,8 +319,8 @@ export function ChatMessageList({
     };
 
     const channel = supabase
-      .channel(`chat_room_view_${roomId}_${Math.random().toString(36).slice(2)}`)
-      // Durable Postgres Changes on Messages
+      .channel(`chat_room_view_${roomId}`)
+      // 1. Durable Postgres Changes on Messages
       .on(
         "postgres_changes",
         {
@@ -319,7 +333,6 @@ export function ChatMessageList({
           const newMsg = payload.new as Message;
           if (!newMsg || !newMsg.id) return;
 
-          // ⚡ Fast-path: Check if sender profile is already in cached participants
           const cachedSender = participants.find((p) => p.user_id === newMsg.sender_id);
           if (cachedSender && cachedSender.username) {
             addMessageSafely({
@@ -337,7 +350,6 @@ export function ChatMessageList({
             return;
           }
 
-          // Fallback: Fetch full message record with sender profile
           const { data: fullMsg } = await supabase
             .from("messages")
             .select("*, sender:profiles(*)")
@@ -348,7 +360,7 @@ export function ChatMessageList({
           addMessageSafely(toAdd);
         }
       )
-      // Real-time Read Receipt updates (when other participants read)
+      // 2. Real-time Read Receipt updates
       .on(
         "postgres_changes",
         {
@@ -370,12 +382,46 @@ export function ChatMessageList({
           }
         }
       )
+      // 3. Realtime Typing Indicator Broadcast
+      .on("broadcast", { event: "typing" }, (payload: any) => {
+        const payloadData = payload?.payload;
+        if (payloadData?.userId && payloadData.userId !== currentUserId) {
+          setTypingUsers((prev) => ({
+            ...prev,
+            [payloadData.userId]: {
+              username: payloadData.username || "상대방",
+              expiresAt: Date.now() + 3000,
+            },
+          }));
+        }
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomId, markRoomAsRead, participants]);
+  }, [roomId, markRoomAsRead, participants, currentUserId]);
+
+  // Quote Reply Trigger
+  const handleQuoteReply = (targetMsg: Message & { sender?: Profile | null }) => {
+    const isMe = targetMsg.sender_id === currentUserId;
+    const senderName = isMe ? "나" : (targetMsg.sender?.username || "상대방");
+    let preview = targetMsg.content || (targetMsg.image_url ? "사진" : "");
+    // Clean existing quote prefix
+    preview = preview.replace(/^>\s*\[답장:[^\]]+\][^\n]*\n?/, "").slice(0, 50);
+
+    window.dispatchEvent(
+      new CustomEvent(`chat:quote-reply-${roomId}`, {
+        detail: {
+          messageId: targetMsg.id,
+          senderName,
+          textPreview: preview,
+        },
+      })
+    );
+  };
+
+  const activeTypingNames = Object.values(typingUsers).map((u) => u.username);
 
   return (
     <div
@@ -395,7 +441,7 @@ export function ChatMessageList({
             <button
               type="button"
               onClick={loadOlderMessages}
-              className="rounded-full bg-zinc-900 border border-zinc-800 px-3 py-1 text-[11px] font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+              className="rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             >
               이전 대화 더보기
             </button>
@@ -431,7 +477,7 @@ export function ChatMessageList({
         const isMe = msg.sender_id === currentUserId;
 
         return (
-          <div key={msg.id} className="space-y-3">
+          <div key={msg.id} className="space-y-3 group/msg">
             {/* Date Divider between different calendar days */}
             {showDateDivider && (
               <div className="flex justify-center my-4">
@@ -443,7 +489,18 @@ export function ChatMessageList({
 
             {isMe ? (
               /* MY MESSAGE (Right-aligned) */
-              <div className="flex items-end justify-end gap-1.5">
+              <div className="flex items-end justify-end gap-1.5 group/me">
+                {/* Reply action button on hover */}
+                <button
+                  type="button"
+                  onClick={() => handleQuoteReply(msg)}
+                  className="opacity-0 group-hover/me:opacity-100 transition-opacity p-1 rounded-full text-zinc-400 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 mb-0.5 cursor-pointer"
+                  title="답장"
+                  aria-label="이 메시지에 답장"
+                >
+                  <CornerDownRight className="h-3 w-3" />
+                </button>
+
                 {/* Unread Count '1' & Timestamp */}
                 <div className="flex flex-col items-end shrink-0 mb-0.5 select-none">
                   {unreadCount > 0 && (
@@ -451,7 +508,7 @@ export function ChatMessageList({
                       {unreadCount}
                     </span>
                   )}
-                  <span className="text-[10px] text-zinc-500 leading-none">
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-none">
                     {new Date(msg.created_at).toLocaleTimeString("ko-KR", {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -477,7 +534,7 @@ export function ChatMessageList({
                     </div>
                   )}
 
-                  {/* Text content */}
+                  {/* Text content with Quote rendering */}
                   {msg.content && (
                     <FormattedText
                       content={msg.content}
@@ -489,7 +546,7 @@ export function ChatMessageList({
               </div>
             ) : (
               /* OTHER USER MESSAGE (Left-aligned) */
-              <div className="flex items-start gap-2 justify-start">
+              <div className="flex items-start gap-2 justify-start group/other">
                 <Avatar
                   src={msg.sender?.avatar_url}
                   fallbackText={msg.sender?.username || "유저"}
@@ -522,7 +579,7 @@ export function ChatMessageList({
                         </div>
                       )}
 
-                      {/* Text content */}
+                      {/* Text content with Quote rendering */}
                       {msg.content && (
                         <FormattedText
                           content={msg.content}
@@ -539,13 +596,24 @@ export function ChatMessageList({
                           {unreadCount}
                         </span>
                       )}
-                      <span className="text-[10px] text-zinc-500 leading-none">
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-none">
                         {new Date(msg.created_at).toLocaleTimeString("ko-KR", {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </span>
                     </div>
+
+                    {/* Reply action button on hover */}
+                    <button
+                      type="button"
+                      onClick={() => handleQuoteReply(msg)}
+                      className="opacity-0 group-hover/other:opacity-100 transition-opacity p-1 rounded-full text-zinc-400 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 mb-0.5 cursor-pointer"
+                      title="답장"
+                      aria-label="이 메시지에 답장"
+                    >
+                      <CornerDownRight className="h-3 w-3" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -553,6 +621,20 @@ export function ChatMessageList({
           </div>
         );
       })}
+
+      {/* Realtime Typing Indicator */}
+      {activeTypingNames.length > 0 && (
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-600 dark:text-zinc-400 w-fit animate-in fade-in slide-in-from-bottom-2 duration-150 select-none shadow-sm">
+          <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+            {activeTypingNames.join(", ")}님이 입력 중
+          </span>
+          <span className="flex gap-1 items-center">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.3s]"></span>
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.15s]"></span>
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-bounce"></span>
+          </span>
+        </div>
+      )}
 
       <div ref={messagesEndRef} />
 

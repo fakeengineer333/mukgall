@@ -311,6 +311,7 @@ export function PostDetailView({
           {/* Comment Section */}
           <CommentSection
             postId={post.id}
+            postAuthorId={post.author_id}
             comments={comments}
             currentUserId={currentUserId}
             currentUserRole={currentUserRole}

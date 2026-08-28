@@ -49,6 +49,23 @@ export function NewChatModal() {
     }
   };
 
+  const handleStartSelfChat = () => {
+    setError(null);
+    startTransition(async () => {
+      const res = await createChatRoomAction({
+        isGroup: false,
+        targetUserIds: [],
+      });
+
+      if (res.error) {
+        setError(res.error);
+      } else if (res.roomId) {
+        setIsOpen(false);
+        router.push(`/chat/${res.roomId}`);
+      }
+    });
+  };
+
   const handleCreateRoom = () => {
     if (selectedUsers.length === 0) {
       setError("대화할 유저를 선택해주세요.");
@@ -89,7 +106,7 @@ export function NewChatModal() {
             {/* Close button */}
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute right-4 top-4 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors"
+              className="absolute right-4 top-4 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
               disabled={isPending}
             >
               <X className="h-5 w-5" />
@@ -98,7 +115,7 @@ export function NewChatModal() {
             <div>
               <h3 className="text-lg font-bold text-zinc-900 dark:text-white">새로운 대화 시작</h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                1:1 대화 또는 여러 명과 함께하는 단체 대화방을 만들 수 있습니다.
+                1:1 대화, 나와의 채팅, 또는 단체 대화방을 만들 수 있습니다.
               </p>
             </div>
 
@@ -117,7 +134,7 @@ export function NewChatModal() {
                   setIsGroup(false);
                   if (selectedUsers.length > 1) setSelectedUsers(selectedUsers.slice(0, 1));
                 }}
-                className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   !isGroup ? "bg-blue-600 text-white shadow" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                 }`}
               >
@@ -127,7 +144,7 @@ export function NewChatModal() {
               <button
                 type="button"
                 onClick={() => setIsGroup(true)}
-                className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   isGroup ? "bg-blue-600 text-white shadow" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                 }`}
               >
@@ -135,6 +152,36 @@ export function NewChatModal() {
                 그룹 단체방
               </button>
             </div>
+
+            {/* Quick Self Chat Button for 1:1 Mode */}
+            {!isGroup && (
+              <button
+                type="button"
+                onClick={handleStartSelfChat}
+                disabled={isPending}
+                className="w-full flex items-center justify-between p-3 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50/80 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 transition-colors shadow-xs group cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-xs shadow-md shadow-blue-600/30">
+                    나
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white">나와의 채팅</span>
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400">
+                        내 메모장
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      나만의 비밀 메모, 사진, 링크 저장소
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+                  시작 →
+                </span>
+              </button>
+            )}
 
             {/* Group Room Name (if group) */}
             {isGroup && (
@@ -181,7 +228,7 @@ export function NewChatModal() {
                 <Input
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="유저 닉네임으로 검색..."
+                  placeholder="다른 유저 닉네임으로 검색..."
                   className="pl-9 text-xs bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
                   disabled={isPending}
                 />

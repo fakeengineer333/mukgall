@@ -43,6 +43,8 @@ export function ChatRoomHeader({
   const isGroup = room.is_group;
   const isHost = isGroup && room.created_by === currentUserId;
   const otherUser = participants.find((p) => p.id !== currentUserId);
+  const isSelfChat = !isGroup && (participants.length === 1 || !otherUser);
+  const myProfile = participants.find((p) => p.id === currentUserId);
 
   // Room Settings State
   const [roomName, setRoomName] = useState(room.name || "");
@@ -84,7 +86,9 @@ export function ChatRoomHeader({
     };
   }, [room.id]);
 
-  const title = isGroup
+  const title = isSelfChat
+    ? "나와의 채팅"
+    : isGroup
     ? roomName || room.name || "그룹 대화방"
     : otherUser?.username || "대화 상대";
 
@@ -133,11 +137,13 @@ export function ChatRoomHeader({
   };
 
   const handleLeave = () => {
-    if (confirm("정말 이 대화방을 나가시겠습니까? 나가면 대화 내용이 더 이상 업데이트되지 않습니다.")) {
+    if (confirm("정말 이 대화방을 나가시겠습니까?")) {
       startTransition(async () => {
         const res = await leaveChatRoomAction(room.id);
         if (res.success) {
           router.push("/chat");
+        } else {
+          alert(res.error || "대화방 나가기에 실패했습니다.");
         }
       });
     }
@@ -168,6 +174,18 @@ export function ChatRoomHeader({
                   <Users className="h-4 w-4" />
                 </div>
               )
+            ) : isSelfChat ? (
+              <div className="relative">
+                <Avatar
+                  src={myProfile?.avatar_url}
+                  fallbackText="나"
+                  size="sm"
+                  className="h-9 w-9 ring-2 ring-blue-500/40"
+                />
+                <div className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-600 text-[8px] font-bold text-white shadow">
+                  나
+                </div>
+              </div>
             ) : (
               <Avatar
                 src={otherUser?.avatar_url}
@@ -182,17 +200,27 @@ export function ChatRoomHeader({
                 <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 max-w-[180px] sm:max-w-xs truncate">
                   {title}
                 </h2>
+                {isSelfChat && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 border-blue-400 dark:border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30">
+                    내 메모장
+                  </Badge>
+                )}
                 {isGroup && (
                   <span className="text-xs text-zinc-500 font-medium">
                     ({participants.length})
                   </span>
                 )}
-                {otherUser?.role === "ADMIN" && !isGroup && (
+                {otherUser?.role === "ADMIN" && !isGroup && !isSelfChat && (
                   <Badge variant="admin" className="text-[9px] px-1 py-0">
                     관리자
                   </Badge>
                 )}
               </div>
+              {isSelfChat && (
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                  나만의 비밀 메모 & 사진 저장소
+                </p>
+              )}
             </div>
           </div>
         </div>
