@@ -87,7 +87,7 @@ export function ChatRoomHeader({
   }, [room.id]);
 
   const title = isSelfChat
-    ? "나와의 채팅"
+    ? myProfile?.username || "나"
     : isGroup
     ? roomName || room.name || "그룹 대화방"
     : otherUser?.username || "대화 상대";
@@ -178,7 +178,7 @@ export function ChatRoomHeader({
               <div className="relative">
                 <Avatar
                   src={myProfile?.avatar_url}
-                  fallbackText="나"
+                  fallbackText={title}
                   size="sm"
                   className="h-9 w-9 ring-2 ring-blue-500/40"
                 />
@@ -200,11 +200,6 @@ export function ChatRoomHeader({
                 <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 max-w-[180px] sm:max-w-xs truncate">
                   {title}
                 </h2>
-                {isSelfChat && (
-                  <Badge variant="outline" className="text-[9px] px-1 py-0 border-blue-400 dark:border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30">
-                    내 메모장
-                  </Badge>
-                )}
                 {isGroup && (
                   <span className="text-xs text-zinc-500 font-medium">
                     ({participants.length})
@@ -216,11 +211,6 @@ export function ChatRoomHeader({
                   </Badge>
                 )}
               </div>
-              {isSelfChat && (
-                <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                  나만의 비밀 메모 & 사진 저장소
-                </p>
-              )}
             </div>
           </div>
         </div>

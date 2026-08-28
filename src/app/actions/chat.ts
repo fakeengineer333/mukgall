@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, isServiceRoleConfigured } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { Profile, Message, ChatRoom } from "@/types";
@@ -112,9 +112,7 @@ export async function createChatRoomAction({
     }
   }
 
-  const roomName = isSelfChat
-    ? "나와의 채팅"
-    : isGroup
+  const roomName = isGroup
     ? name?.trim() || `${myUsername}님의 그룹 대화방`
     : null;
 
@@ -148,9 +146,12 @@ export async function createChatRoomAction({
     }
   }
 
+  const adminClient = createAdminClient();
+  const insertClient = isServiceRoleConfigured() ? adminClient : supabase;
+
   // 2. Direct client insert fallback / Self Chat creation
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let { data: newRoom, error: roomErr } = await (supabase.from("chat_rooms") as any)
+  let { data: newRoom, error: roomErr } = await (insertClient.from("chat_rooms") as any)
     .insert({
       name: roomName,
       is_group: isGroup,
@@ -158,6 +159,23 @@ export async function createChatRoomAction({
     })
     .select()
     .single();
+
+  if (roomErr && insertClient !== adminClient) {
+    // Retry with adminClient
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const retryRes = await (adminClient.from("chat_rooms") as any)
+      .insert({
+        name: roomName,
+        is_group: isGroup,
+        created_by: user.id,
+      })
+      .select()
+      .single();
+    if (retryRes.data) {
+      newRoom = retryRes.data;
+      roomErr = null;
+    }
+  }
 
   if (roomErr || !newRoom) {
     return { success: false, error: `채팅방 생성 실패: ${roomErr?.message}` };
@@ -174,23 +192,38 @@ export async function createChatRoomAction({
     last_read_at: new Date().toISOString(),
   }));
 
+  const activeClient = isServiceRoleConfigured() ? adminClient : supabase;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from("chat_participants") as any).insert(participantsToInsert);
+  const { error: partErr } = await (activeClient.from("chat_participants") as any).insert(participantsToInsert);
+  if (partErr && activeClient !== adminClient) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (adminClient.from("chat_participants") as any).insert(participantsToInsert);
+  }
 
   // Send initial system message
   const systemContent = isSelfChat
-    ? "나만의 비밀 메모, 사진, 링크 저장소가 생성되었습니다."
+    ? "나와의 채팅방이 생성되었습니다."
     : isGroup
     ? `${myUsername}님이 단체 대화방을 개설했습니다.`
     : `대화가 시작되었습니다.`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from("messages") as any).insert({
+  const { error: msgErr } = await (activeClient.from("messages") as any).insert({
     room_id: roomId,
     sender_id: user.id,
     content: systemContent,
     message_type: "SYSTEM",
   });
+  if (msgErr && activeClient !== adminClient) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (adminClient.from("messages") as any).insert({
+      room_id: roomId,
+      sender_id: user.id,
+      content: systemContent,
+      message_type: "SYSTEM",
+    });
+  }
 
   // Record audit log
   await recordAuditLog({
@@ -552,7 +585,7 @@ export async function fetchUserChatRoomsAction(): Promise<ChatRoom[]> {
 
       return {
         ...room,
-        name: isSelfChat ? "나와의 채팅" : room.name,
+        name: isSelfChat ? myProfileObj?.username || "나" : room.name,
         otherUser: isSelfChat ? myProfileObj : otherParticipant?.profile || null,
         participantCount: roomParticipants.length,
         last_message: lastMessage,

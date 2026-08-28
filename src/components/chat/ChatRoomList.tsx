@@ -143,9 +143,9 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
     <div className="divide-y divide-zinc-200 dark:divide-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-xl overflow-hidden backdrop-blur-xl">
       {rooms.map((room) => {
         const isGroup = room.is_group;
-        const isSelfChat = !isGroup && (room.participantCount === 1 || room.name === "나와의 채팅");
+        const isSelfChat = !isGroup && (room.participantCount === 1 || room.otherUser?.id === currentUserId);
         const displayName = isSelfChat
-          ? "나와의 채팅"
+          ? room.otherUser?.username || "나"
           : isGroup
           ? room.name || "그룹 대화방"
           : room.otherUser?.username || "대화 상대";
@@ -156,7 +156,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
           (room.last_message?.image_url
             ? "사진을 보냈습니다."
             : isSelfChat
-            ? "나만의 비밀 메모, 사진, 링크 저장소"
+            ? "나와의 채팅방이 생성되었습니다."
             : "대화가 시작되었습니다.");
 
         return (
@@ -183,7 +183,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
                 <div className="relative">
                   <Avatar
                     src={displayAvatar}
-                    fallbackText="나"
+                    fallbackText={displayName}
                     size="md"
                     className="h-11 w-11 border-2 border-blue-500/40"
                   />
@@ -205,11 +205,6 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
                   <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {displayName}
                   </span>
-                  {isSelfChat && (
-                    <Badge variant="outline" className="text-[9px] px-1 py-0 border-blue-400 dark:border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30">
-                      내 메모장
-                    </Badge>
-                  )}
                   {isGroup && room.participantCount && (
                     <span className="text-[11px] font-semibold text-zinc-500">
                       {room.participantCount}

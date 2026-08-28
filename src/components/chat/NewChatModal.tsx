@@ -166,14 +166,9 @@ export function NewChatModal() {
                     나
                   </div>
                   <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-zinc-900 dark:text-white">나와의 채팅</span>
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400">
-                        내 메모장
-                      </Badge>
-                    </div>
+                    <span className="text-xs font-bold text-zinc-900 dark:text-white">나와의 채팅</span>
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                      나만의 비밀 메모, 사진, 링크 저장소
+                      나만의 메모와 사진을 기록하고 보관할 수 있습니다
                     </p>
                   </div>
                 </div>
