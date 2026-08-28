@@ -1,7 +1,7 @@
 {
   "name": "묵호 갤러리",
   "short_name": "묵갤",
-  "description": "묵호 커뮤니티",
+  "description": "묵호 커뮤니티 사이트",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090b",

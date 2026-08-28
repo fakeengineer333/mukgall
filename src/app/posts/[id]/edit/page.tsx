@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthProfile, getAuthUser } from "@/lib/auth";
 import { PostEditForm } from "@/components/gallery/PostEditForm";
 import { Post } from "@/types";
+
+export const metadata: Metadata = {
+  title: "글 수정",
+};
 
 interface PostEditPageProps {
   params: Promise<{ id: string }>;

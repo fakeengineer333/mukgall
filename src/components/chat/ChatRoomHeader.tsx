@@ -92,6 +92,13 @@ export function ChatRoomHeader({
     ? roomName || room.name || "그룹 대화방"
     : otherUser?.username || "대화 상대";
 
+  // Sync document.title for Chrome tab in chat room
+  useEffect(() => {
+    if (typeof document !== "undefined" && title) {
+      document.title = `${title} - 묵호 갤러리`;
+    }
+  }, [title]);
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthProfile, getAuthUser } from "@/lib/auth";
 import { fetchUserChatRoomsAction } from "@/app/actions/chat";
@@ -13,6 +14,23 @@ interface HomePageProps {
     type?: string;
     view?: string;
   }>;
+}
+
+export async function generateMetadata({ searchParams }: HomePageProps): Promise<Metadata> {
+  const resolved = await searchParams;
+  const view = resolved.view;
+  if (view === "chat") {
+    return { title: "채팅" };
+  }
+  if (view === "mypage") {
+    return { title: "마이페이지" };
+  }
+  return {
+    title: {
+      absolute: "묵호 갤러리",
+    },
+    description: "묵호 커뮤니티 사이트",
+  };
 }
 
 const PAGE_SIZE = 15;

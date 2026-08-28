@@ -1,5 +1,7 @@
 "use server";
 
+import { createAdminClient } from "@/lib/supabase/admin";
+
 export interface LinkPreviewData {
   url: string;
   title: string | null;
@@ -22,6 +24,9 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 function cleanUrl(rawUrl: string): string | null {
   try {
     let normalized = rawUrl.trim();
+    if (normalized.startsWith("/")) {
+      return normalized;
+    }
     if (!/^https?:\/\//i.test(normalized)) {
       normalized = "https://" + normalized;
     }
@@ -81,6 +86,43 @@ function extractMetaTag(html: string, propertyOrName: string): string | null {
 }
 
 export async function getLinkPreviewAction(rawUrl: string): Promise<LinkPreviewData | null> {
+  // 1. FAST-PATH: Direct DB lookup for internal Mukho Gallery post links (/posts/123 or https://.../posts/123)
+  const postMatch = rawUrl.match(/(?:\/posts\/|^posts\/)(\d+)(?:[/?#]|$)/);
+  if (postMatch && postMatch[1]) {
+    try {
+      const postId = parseInt(postMatch[1], 10);
+      const supabase = createAdminClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: post } = await (supabase.from("posts") as any)
+        .select("id, title, content, image_urls, created_at, author:profiles(username, avatar_url)")
+        .eq("id", postId)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+      if (post) {
+        const authorName = (post.author as any)?.username || "익명";
+        const thumbnail = Array.isArray(post.image_urls) && post.image_urls.length > 0
+          ? post.image_urls[0]
+          : null;
+        const cleanBody = post.content
+          ? post.content.replace(/\n+/g, " ").trim().slice(0, 100)
+          : "사진 게시글";
+
+        return {
+          url: `/posts/${postId}`,
+          title: post.title,
+          description: cleanBody,
+          image: thumbnail,
+          siteName: `묵갤 • ${authorName}`,
+          favicon: "/icons/icon-192x192.png",
+          hostname: "묵갤 (Mukho Gallery)",
+        };
+      }
+    } catch (e) {
+      console.warn("[getLinkPreviewAction] Internal post lookup notice:", e);
+    }
+  }
+
   const url = cleanUrl(rawUrl);
   if (!url) return null;
 

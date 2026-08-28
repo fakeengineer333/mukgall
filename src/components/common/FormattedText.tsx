@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import Link from "next/link";
 import { CornerDownRight } from "lucide-react";
 import { LinkPreviewCard } from "@/components/common/LinkPreviewCard";
 
@@ -12,11 +13,14 @@ interface FormattedTextProps {
   className?: string;
 }
 
-// Regex to capture full URLs (https?://...), www...., and common web domains
+// Regex to capture full URLs (https?://...), internal post links (/posts/123), www...., and common web domains
 const URL_REGEX =
-  /(https?:\/\/[^\s<]+[^<.,:;"')\]\s]|(?:www\.)[^\s<]+[^<.,:;"')\]\s]|(?:[a-zA-Z0-9-]+\.)+(?:com|net|org|kr|co\.kr|io|dev|app|me|ai|tv|xyz|info)(?:\/[^\s<]*[^<.,:;"')\]\s])?)/gi;
+  /(https?:\/\/[^\s<]+[^<.,:;"')\]\s]|\/posts\/\d+|(?:www\.)[^\s<]+[^<.,:;"')\]\s]|(?:[a-zA-Z0-9-]+\.)+(?:com|net|org|kr|co\.kr|io|dev|app|me|ai|tv|xyz|info)(?:\/[^\s<]*[^<.,:;"')\]\s])?)/gi;
 
 function toValidHref(rawUrl: string): string {
+  if (rawUrl.startsWith("/")) {
+    return rawUrl;
+  }
   if (/^https?:\/\//i.test(rawUrl)) {
     return rawUrl;
   }
@@ -79,18 +83,30 @@ export function FormattedText({
         linkClass += " text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300";
       }
 
-      // Push clickable link
+      // Push clickable link (Next.js Link if internal)
+      const isInternal = validHref.startsWith("/");
       parts.push(
-        <a
-          key={`link-${matchIndex}`}
-          href={validHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className={linkClass}
-        >
-          {matchedText}
-        </a>
+        isInternal ? (
+          <Link
+            key={`link-${matchIndex}`}
+            href={validHref}
+            onClick={(e) => e.stopPropagation()}
+            className={linkClass}
+          >
+            {matchedText}
+          </Link>
+        ) : (
+          <a
+            key={`link-${matchIndex}`}
+            href={validHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className={linkClass}
+          >
+            {matchedText}
+          </a>
+        )
       );
 
       lastIndex = regex.lastIndex;

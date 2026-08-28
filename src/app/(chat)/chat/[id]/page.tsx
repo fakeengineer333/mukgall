@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/auth";
@@ -8,6 +9,48 @@ import { ChatRoom, Message, Profile } from "@/types";
 
 interface ChatRoomPageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: ChatRoomPageProps): Promise<Metadata> {
+  const resolvedParams = await params;
+  const roomId = resolvedParams.id;
+  const supabase = await createClient();
+  const user = await getAuthUser();
+
+  const [{ data: room }, { data: participants }] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from("chat_rooms") as any).select("*").eq("id", roomId).maybeSingle(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from("chat_participants") as any)
+      .select("user_id, profile:profiles(username)")
+      .eq("room_id", roomId)
+      .is("left_at", null),
+  ]);
+
+  if (!room) {
+    return { title: "대화방" };
+  }
+
+  const typedRoom = room as ChatRoom;
+  const isGroup = typedRoom.is_group;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parts = (participants || []) as any[];
+  const isSelfChat = !isGroup && (parts.length === 1 || !parts.some((p) => p.user_id !== user?.id));
+
+  let roomTitle = "대화방";
+  if (isSelfChat) {
+    const myProfile = parts.find((p) => p.user_id === user?.id);
+    roomTitle = myProfile?.profile?.username || "나와의 채팅";
+  } else if (isGroup) {
+    roomTitle = typedRoom.name || "그룹 대화방";
+  } else {
+    const other = parts.find((p) => p.user_id !== user?.id);
+    roomTitle = other?.profile?.username || "1:1 대화";
+  }
+
+  return {
+    title: roomTitle,
+  };
 }
 
 export default async function ChatRoomPage({ params }: ChatRoomPageProps) {

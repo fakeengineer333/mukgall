@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthProfile, getAuthUser } from "@/lib/auth";
@@ -7,6 +8,36 @@ import { Post, Comment } from "@/types";
 
 interface PostPageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
+  const resolvedParams = await params;
+  const postId = Number(resolvedParams.id);
+  if (isNaN(postId)) {
+    return { title: "게시글" };
+  }
+
+  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: post } = await (supabase.from("posts") as any)
+    .select("title, content, image_urls")
+    .eq("id", postId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!post) {
+    return { title: "게시글을 찾을 수 없습니다" };
+  }
+
+  return {
+    title: post.title,
+    description: post.content ? post.content.slice(0, 100) : "묵호 커뮤니티 사이트",
+    openGraph: {
+      title: `${post.title} - 묵호 갤러리`,
+      description: post.content ? post.content.slice(0, 100) : "묵호 커뮤니티 사이트",
+      images: Array.isArray(post.image_urls) && post.image_urls.length > 0 ? [post.image_urls[0]] : undefined,
+    },
+  };
 }
 
 export default async function PostDetailPage({ params }: PostPageProps) {

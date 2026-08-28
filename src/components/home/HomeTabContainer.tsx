@@ -65,6 +65,18 @@ export function HomeTabContainer({
     }
   }, [initialView]);
 
+  // Synchronize document.title based on active tab
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (activeView === "chat") {
+      document.title = "채팅 - 묵호 갤러리";
+    } else if (activeView === "mypage") {
+      document.title = "마이페이지 - 묵호 갤러리";
+    } else {
+      document.title = "묵호 갤러리";
+    }
+  }, [activeView]);
+
   // Idle Background Prefetching: Quietly prefetch Chat & MyPage in the background when browser is idle
   useEffect(() => {
     if (!userProfile) return;
@@ -151,7 +163,7 @@ export function HomeTabContainer({
                   묵호 갤러리
                 </h1>
                 <p className="text-xs text-zinc-300 dark:text-zinc-400 mt-0.5">
-                  반갑다. 묵호 갤러리다.
+                  묵호 커뮤니티 사이트
                 </p>
               </div>
             </div>

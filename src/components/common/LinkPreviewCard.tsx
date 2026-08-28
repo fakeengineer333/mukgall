@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import useSWR from "swr";
-import { ExternalLink, Globe } from "lucide-react";
+import { ExternalLink, Globe, ArrowRight } from "lucide-react";
 import { getLinkPreviewAction, LinkPreviewData } from "@/app/actions/linkPreview";
 
 interface LinkPreviewCardProps {
@@ -81,19 +82,17 @@ export function LinkPreviewCard({
     return null;
   }
 
-  return (
-    <a
-      href={preview.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`group my-1.5 block rounded-xl border shadow-sm transition-all overflow-hidden w-full ${
-        compact ? "max-w-xs sm:max-w-sm" : "max-w-lg"
-      } ${
-        isMe
-          ? "bg-blue-700/90 hover:bg-blue-700 border-blue-400/40 text-white"
-          : "bg-white dark:bg-zinc-900/95 hover:border-blue-500/60 border-zinc-200 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100"
-      } ${className}`}
-    >
+  const isInternal = preview.url.startsWith("/");
+  const containerClass = `group my-1.5 block rounded-xl border shadow-sm transition-all overflow-hidden w-full ${
+    compact ? "max-w-xs sm:max-w-sm" : "max-w-lg"
+  } ${
+    isMe
+      ? "bg-blue-700/90 hover:bg-blue-700 border-blue-400/40 text-white"
+      : "bg-white dark:bg-zinc-900/95 hover:border-blue-500/60 border-zinc-200 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100"
+  } ${className}`;
+
+  const cardInner = (
+    <>
       {/* Thumbnail Banner */}
       {preview.image && (
         <div
@@ -169,13 +168,40 @@ export function LinkPreviewCard({
           }`}
         >
           <span className="truncate max-w-[180px]">{preview.hostname}</span>
-          <ExternalLink
-            className={`h-3 w-3 shrink-0 ml-1 ${
-              isMe ? "text-blue-200" : "text-blue-500"
-            }`}
-          />
+          {isInternal ? (
+            <ArrowRight
+              className={`h-3 w-3 shrink-0 ml-1 group-hover:translate-x-0.5 transition-transform ${
+                isMe ? "text-blue-200" : "text-blue-500"
+              }`}
+            />
+          ) : (
+            <ExternalLink
+              className={`h-3 w-3 shrink-0 ml-1 ${
+                isMe ? "text-blue-200" : "text-blue-500"
+              }`}
+            />
+          )}
         </div>
       </div>
+    </>
+  );
+
+  if (isInternal) {
+    return (
+      <Link href={preview.url} className={containerClass}>
+        {cardInner}
+      </Link>
+    );
+  }
+
+  return (
+    <a
+      href={preview.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={containerClass}
+    >
+      {cardInner}
     </a>
   );
 }

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.7.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.7.2-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black.svg?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg?logo=tailwind-css)
@@ -166,6 +166,11 @@ npm run start
 ---
 
 ## 📜 버전 이력 (Changelog)
+
+### `v0.7.2` (2026-08-29)
+- **📸 묵갤 게시글 링크 스마트 미리보기 카드 (Smart Post Preview Card) 탑재**
+  - **초고속 DB 패스트패스 ([`linkPreview.ts`](file:///Users/mukho/Desktop/mukgall/src/app/actions/linkPreview.ts))**: 채팅이나 댓글에 묵갤 게시글 URL(`https://.../posts/123`) 또는 상대 경로(`/posts/123`) 전송 시 0.001초 만에 게시글의 제목, 첨부 썸네일 사진, 작성자 정보, 본문 요약을 감지
+  - **인앱 네이티브 라우팅 ([`LinkPreviewCard.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/common/LinkPreviewCard.tsx), [`FormattedText.tsx`](file:///Users/mukho/Desktop/mukgall/src/components/common/FormattedText.tsx))**: 카드 클릭 시 외부 브라우저 탭 이동 없이 Next.js 클라이언트 라우터(`Link`)로 0.00초 즉시 게시글 페이지로 전환
 
 ### `v0.7.1` (2026-08-28)
 - **💬 나와의 채팅(개인 메모장/저장소) & 게시글 본인 댓글 '작성자' 뱃지 표시**

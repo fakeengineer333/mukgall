@@ -11,8 +11,11 @@ import { Profile } from "@/types";
 import { ChatProvider } from "@/providers/ChatProvider";
 
 export const metadata: Metadata = {
-  title: "묵호 갤러리",
-  description: "PWA 기반 커뮤니티형 이미지 갤러리 및 실시간 메시징 플랫폼",
+  title: {
+    default: "묵호 갤러리",
+    template: "%s - 묵호 갤러리",
+  },
+  description: "묵호 커뮤니티 사이트",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

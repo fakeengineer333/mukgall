@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Shield, Trash2, FileText } from "lucide-react";
 import { fetchAuditLogsAction, fetchDeletedContentAction } from "@/app/actions/admin";
@@ -7,6 +8,10 @@ import { AdminStats } from "@/components/admin/AdminStats";
 import { AuditLogsViewer } from "@/components/admin/AuditLogsViewer";
 import { DeletedContentManager } from "@/components/admin/DeletedContentManager";
 import { Badge } from "@/components/ui/badge";
+
+export const metadata: Metadata = {
+  title: "관리자 대시보드",
+};
 
 export default async function AdminPage() {
   const profile = await getAuthProfile();
