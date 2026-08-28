@@ -170,14 +170,16 @@ export async function updatePostAction(
     return { error: validated.error.issues[0]?.message || "입력 정보가 올바르지 않습니다." };
   }
 
+  const adminClient = createAdminClient();
+
   // Check post ownership or admin
-  const { data: post } = await supabase
-    .from("posts")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: post, error: fetchErr } = await (adminClient.from("posts") as any)
     .select("*, author:profiles(*)")
     .eq("id", postId)
-    .single();
+    .maybeSingle();
 
-  if (!post) {
+  if (fetchErr || !post) {
     return { error: "게시글을 찾을 수 없습니다." };
   }
 
@@ -189,7 +191,7 @@ export async function updatePostAction(
 
   const isAdmin = (profile as { role?: string } | null)?.role === "ADMIN";
   if ((post as unknown as Post).author_id !== user.id && !isAdmin) {
-    return { error: "게시글 수정 권한이 없습니다." };
+    return { error: "게시글 수정 권한이 없습니다. (작성자 본인만 수정 가능)" };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -352,25 +354,43 @@ export async function deletePostAction(postId: number): Promise<{ success: boole
     .single();
 
   const isAdmin = (profile as { role?: string } | null)?.role === "ADMIN";
+  const adminClient = createAdminClient();
 
-  // Soft Delete: set deleted_at = NOW()
+  // 1. Fetch post to verify existence and ownership
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: post, error: fetchErr } = await (adminClient.from("posts") as any)
+    .select("id, author_id, deleted_at")
+    .eq("id", postId)
+    .maybeSingle();
+
+  if (fetchErr || !post) {
+    return { success: false, error: "게시글을 찾을 수 없습니다." };
+  }
+
+  // 2. Permission check: Author or Admin
+  if (post.author_id !== user.id && !isAdmin) {
+    return { success: false, error: "본인이 작성한 게시글만 삭제할 수 있습니다." };
+  }
+
+  // 3. Soft Delete: set deleted_at = NOW()
   const updateData = { deleted_at: new Date().toISOString() };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase.from("posts") as any).update(updateData).eq("id", postId);
-  if (!isAdmin) {
-    query = query.eq("author_id", user.id);
+  let { error: updateErr } = await (supabase.from("posts") as any)
+    .update(updateData)
+    .eq("id", postId);
+
+  if (updateErr) {
+    // Fallback to adminClient
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const retryRes = await (adminClient.from("posts") as any)
+      .update(updateData)
+      .eq("id", postId);
+    updateErr = retryRes.error;
   }
 
-  const { error } = await query;
-  if (error) {
-    if (isAdmin) {
-      const adminClient = createAdminClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (adminClient.from("posts") as any).update(updateData).eq("id", postId);
-    } else {
-      return { success: false, error: "게시글 삭제 권한이 없거나 삭제에 실패했습니다." };
-    }
+  if (updateErr) {
+    return { success: false, error: `게시글 삭제 실패: ${updateErr.message}` };
   }
 
   await recordAuditLog({

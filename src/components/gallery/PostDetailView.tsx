@@ -80,6 +80,8 @@ export function PostDetailView({
         const res = await deletePostAction(post.id);
         if (res.success) {
           router.push("/");
+        } else if (res.error) {
+          alert(res.error);
         }
       });
     }

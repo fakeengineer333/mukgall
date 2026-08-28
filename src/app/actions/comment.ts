@@ -117,25 +117,43 @@ export async function deleteCommentAction(
     .single();
 
   const isAdmin = (profile as { role?: string } | null)?.role === "ADMIN";
+  const adminClient = createAdminClient();
 
-  // Soft Delete: set deleted_at = NOW()
+  // 1. Fetch comment to verify existence and ownership
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: comment, error: fetchErr } = await (adminClient.from("comments") as any)
+    .select("id, author_id, deleted_at")
+    .eq("id", commentId)
+    .maybeSingle();
+
+  if (fetchErr || !comment) {
+    return { success: false, error: "댓글을 찾을 수 없습니다." };
+  }
+
+  // 2. Permission check: Author or Admin
+  if (comment.author_id !== user.id && !isAdmin) {
+    return { success: false, error: "본인이 작성한 댓글만 삭제할 수 있습니다." };
+  }
+
+  // 3. Soft Delete: set deleted_at = NOW()
   const updateData = { deleted_at: new Date().toISOString() };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase.from("comments") as any).update(updateData).eq("id", commentId);
-  if (!isAdmin) {
-    query = query.eq("author_id", user.id);
+  let { error: updateErr } = await (supabase.from("comments") as any)
+    .update(updateData)
+    .eq("id", commentId);
+
+  if (updateErr) {
+    // Fallback to adminClient
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const retryRes = await (adminClient.from("comments") as any)
+      .update(updateData)
+      .eq("id", commentId);
+    updateErr = retryRes.error;
   }
 
-  const { error } = await query;
-  if (error) {
-    if (isAdmin) {
-      const adminClient = createAdminClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (adminClient.from("comments") as any).update(updateData).eq("id", commentId);
-    } else {
-      return { success: false, error: "댓글 삭제 권한이 없거나 삭제에 실패했습니다." };
-    }
+  if (updateErr) {
+    return { success: false, error: `댓글 삭제 실패: ${updateErr.message}` };
   }
 
   await recordAuditLog({
