@@ -31,10 +31,10 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
 
   return {
     title: post.title,
-    description: post.content ? post.content.slice(0, 100) : "묵호 커뮤니티 사이트",
+    description: "묵호 커뮤니티 사이트",
     openGraph: {
       title: `${post.title} - 묵호 갤러리`,
-      description: post.content ? post.content.slice(0, 100) : "묵호 커뮤니티 사이트",
+      description: "묵호 커뮤니티 사이트",
       images: Array.isArray(post.image_urls) && post.image_urls.length > 0 ? [post.image_urls[0]] : undefined,
     },
   };

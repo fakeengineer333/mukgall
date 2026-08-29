@@ -222,9 +222,16 @@ export function PostDetailView({
         <CardContent className="p-5 sm:p-7 space-y-6">
           {/* Post Header: Title & Meta */}
           <div className="space-y-3">
-            <h1 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-white leading-tight">
-              {post.title}
-            </h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              {post.is_notice && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-xs font-black text-amber-700 dark:text-amber-300 shrink-0">
+                  📢 공지
+                </span>
+              )}
+              <h1 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-white leading-tight">
+                {post.title}
+              </h1>
+            </div>
 
             <div className="flex items-center justify-between flex-wrap gap-3 pt-1 border-b border-zinc-200 dark:border-zinc-800/80 pb-4">
               <UserActionMenu

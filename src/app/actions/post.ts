@@ -80,6 +80,16 @@ export async function createPostAction(
     return { error: validated.error.issues[0]?.message || "입력 정보가 올바르지 않습니다." };
   }
 
+  const isNoticeRaw = formData.get("is_notice") === "true" || formData.get("is_notice") === "on";
+  const { data: userProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isAdmin = (userProfile as { role?: string } | null)?.role === "ADMIN";
+  const isNotice = isAdmin ? isNoticeRaw : false;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: newPost, error } = await (supabase.from("posts") as any)
     .insert({
@@ -87,6 +97,7 @@ export async function createPostAction(
       title,
       content,
       image_urls: imageUrls,
+      is_notice: isNotice,
       like_count: 0,
     })
     .select()
@@ -102,6 +113,7 @@ export async function createPostAction(
         title,
         content,
         image_urls: imageUrls,
+        is_notice: isNotice,
         like_count: 0,
       })
       .select()
@@ -116,7 +128,7 @@ export async function createPostAction(
       action: "POST_CREATE",
       targetType: "posts",
       targetId: String(fallbackPost.id),
-      metadata: { title, imageCount: imageUrls.length },
+      metadata: { title, imageCount: imageUrls.length, isNotice },
     });
 
     revalidatePath("/");
@@ -194,12 +206,16 @@ export async function updatePostAction(
     return { error: "게시글 수정 권한이 없습니다. (작성자 본인만 수정 가능)" };
   }
 
+  const isNoticeRaw = formData.get("is_notice") === "true" || formData.get("is_notice") === "on";
+  const isNoticeToUpdate = isAdmin ? isNoticeRaw : Boolean((post as unknown as Post).is_notice);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from("posts") as any)
     .update({
       title,
       content,
       image_urls: imageUrls,
+      is_notice: isNoticeToUpdate,
       updated_at: new Date().toISOString(),
     })
     .eq("id", postId);
@@ -212,6 +228,7 @@ export async function updatePostAction(
         title,
         content,
         image_urls: imageUrls,
+        is_notice: isNoticeToUpdate,
         updated_at: new Date().toISOString(),
       })
       .eq("id", postId);
@@ -225,6 +242,7 @@ export async function updatePostAction(
     metadata: {
       title,
       imageCount: imageUrls.length,
+      isNotice: isNoticeToUpdate,
     },
   });
 

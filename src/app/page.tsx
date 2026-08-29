@@ -59,7 +59,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   let postsQuery = supabase
     .from("posts")
     .select(
-      "id, title, author_id, created_at, view_count, like_count, image_urls, deleted_at, author:profiles(id, username, avatar_url, role), comments:comments(id)",
+      "id, title, author_id, created_at, view_count, like_count, is_notice, image_urls, deleted_at, author:profiles(id, username, avatar_url, role), comments:comments(id)",
       { count: "exact" }
     );
 
@@ -107,30 +107,61 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   let rawPosts: any[] | null = null;
   let count: number | null = null;
+  let noticePosts: any[] = [];
+
+  // Fetch notices on page 1
+  const noticesPromise =
+    page === 1
+      ? (async () => {
+          let nQuery = supabase
+            .from("posts")
+            .select(
+              "id, title, author_id, created_at, view_count, like_count, is_notice, image_urls, deleted_at, author:profiles(id, username, avatar_url, role), comments:comments(id)"
+            )
+            .eq("is_notice", true);
+          if (!isAdmin) {
+            nQuery = nQuery.is("deleted_at", null);
+          }
+          nQuery = nQuery.order("created_at", { ascending: false });
+          const { data } = await nQuery;
+          return data || [];
+        })()
+      : Promise.resolve([]);
 
   if (initialView === "chat" && user) {
-    const [postsRes, roomsData] = await Promise.all([
+    const [postsRes, roomsData, noticesData] = await Promise.all([
       postsQuery,
       fetchUserChatRoomsAction(),
+      noticesPromise,
     ]);
     rawPosts = postsRes.data;
     count = postsRes.count;
     formattedRooms = roomsData;
+    noticePosts = noticesData;
   } else if (initialView === "mypage" && user) {
-    const [postsRes, activityData] = await Promise.all([
+    const [postsRes, activityData, noticesData] = await Promise.all([
       postsQuery,
       fetchUserActivityAction(),
+      noticesPromise,
     ]);
     rawPosts = postsRes.data;
     count = postsRes.count;
     userPosts = activityData.posts;
     userComments = activityData.comments;
+    noticePosts = noticesData;
   } else {
-    // Default fast-path: Only fetch gallery feed
-    const postsRes = await postsQuery;
+    // Default fast-path: Only fetch gallery feed & notices
+    const [postsRes, noticesData] = await Promise.all([postsQuery, noticesPromise]);
     rawPosts = postsRes.data;
     count = postsRes.count;
+    noticePosts = noticesData;
   }
+
+  // Merge notices at top of Page 1 (avoid duplicate IDs)
+  const combinedRawPosts =
+    page === 1 && noticePosts.length > 0
+      ? [...noticePosts, ...(rawPosts || []).filter((p: any) => !p.is_notice)]
+      : rawPosts || [];
 
   // Format comments_count and precompute formatted_date
   const nowKst = new Date(Date.now() + 9 * 60 * 60 * 1000);
@@ -138,7 +169,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const nowMonth = nowKst.getUTCMonth();
   const nowDate = nowKst.getUTCDate();
 
-  const posts: Post[] = (rawPosts || []).map((p: any) => {
+  const posts: Post[] = combinedRawPosts.map((p: any) => {
     let formatted_date = "";
     if (p.created_at) {
       const d = new Date(p.created_at);
@@ -163,6 +194,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
     return {
       ...p,
+      is_notice: Boolean(p.is_notice),
       comments_count: Array.isArray(p.comments) ? p.comments.length : 0,
       like_count: p.like_count || 0,
       formatted_date,

@@ -50,7 +50,7 @@ export default async function PostEditPage({ params }: PostEditPageProps) {
 
   return (
     <div className="py-6">
-      <PostEditForm post={typedPost} />
+      <PostEditForm post={typedPost} isAdmin={isAdmin} />
     </div>
   );
 }

@@ -12,10 +12,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 const DRAFT_KEY_TITLE = "mukgall_draft_post_title";
 const DRAFT_KEY_CONTENT = "mukgall_draft_post_content";
 
-export function PostCreateForm() {
+interface PostCreateFormProps {
+  isAdmin?: boolean;
+}
+
+export function PostCreateForm({ isAdmin = false }: PostCreateFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [isNotice, setIsNotice] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const initialState: PostFormState = { error: null };
   const [state, formAction, isPending] = useActionState(createPostAction, initialState);
@@ -83,6 +88,33 @@ export function PostCreateForm() {
 
           {/* Hidden image URLs json string */}
           <input type="hidden" name="image_urls" value={JSON.stringify(imageUrls)} />
+
+          {/* Admin Notice Toggle */}
+          {isAdmin && (
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">📢</span>
+                <div>
+                  <label htmlFor="is_notice" className="text-xs font-bold text-amber-700 dark:text-amber-300 block cursor-pointer">
+                    공지글로 등록
+                  </label>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    게시판 1페이지 최상단에 항상 고정으로 노출됩니다.
+                  </p>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                id="is_notice"
+                name="is_notice"
+                value="true"
+                checked={isNotice}
+                onChange={(e) => setIsNotice(e.target.checked)}
+                disabled={isPending}
+                className="h-5 w-5 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+              />
+            </div>
+          )}
 
           {/* Title */}
           <div className="space-y-1.5">

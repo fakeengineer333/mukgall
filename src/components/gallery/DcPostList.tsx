@@ -199,12 +199,22 @@ export function DcPostList({
                     <tr
                       key={post.id}
                       className={`hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors ${
-                        isDeleted ? "bg-red-950/10 opacity-70" : ""
+                        post.is_notice
+                          ? "bg-amber-500/10 dark:bg-amber-500/10 font-medium"
+                          : isDeleted
+                          ? "bg-red-950/10 opacity-70"
+                          : ""
                       }`}
                     >
                       {/* 번호 */}
-                      <td className="py-2.5 px-3 text-center font-mono text-zinc-600 dark:text-zinc-400 text-[11px]">
-                        {post.id}
+                      <td className="py-2.5 px-3 text-center font-mono text-[11px]">
+                        {post.is_notice ? (
+                          <span className="inline-flex items-center gap-0.5 font-black text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px]">
+                            공지
+                          </span>
+                        ) : (
+                          <span className="text-zinc-600 dark:text-zinc-400">{post.id}</span>
+                        )}
                       </td>
 
                       {/* 제목 */}
@@ -220,7 +230,12 @@ export function DcPostList({
                             </span>
                           )}
 
-                          <span className="truncate text-zinc-900 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                          <span className={`truncate text-zinc-900 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 ${post.is_notice ? "font-bold text-amber-900 dark:text-amber-200" : ""}`}>
+                            {post.is_notice && (
+                              <span className="text-amber-600 dark:text-amber-400 mr-1 font-black">
+                                [공지]
+                              </span>
+                            )}
                             {post.title}
                           </span>
 
@@ -313,18 +328,27 @@ export function DcPostList({
                 <Link
                   key={post.id}
                   href={`/posts/${post.id}`}
-                  className="block p-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors space-y-1.5"
+                  className={`block p-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors space-y-1.5 ${
+                    post.is_notice ? "bg-amber-500/10 dark:bg-amber-500/10" : ""
+                  }`}
                 >
                   <div className="flex items-start gap-1.5">
-                    <span className="text-[11px] font-mono text-zinc-600 dark:text-zinc-400 shrink-0">
-                      {post.id}
-                    </span>
+                    {post.is_notice ? (
+                      <span className="font-black text-amber-600 dark:text-amber-400 text-[10px] bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded shrink-0">
+                        공지
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-mono text-zinc-600 dark:text-zinc-400 shrink-0">
+                        {post.id}
+                      </span>
+                    )}
                     {hasImage && (
                       <span className="shrink-0 p-0.5 rounded bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 text-blue-600 dark:text-blue-400">
                         <ImageIcon className="h-2.5 w-2.5" />
                       </span>
                     )}
-                    <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 line-clamp-1 flex-1">
+                    <span className={`text-xs font-semibold line-clamp-1 flex-1 ${post.is_notice ? "text-amber-900 dark:text-amber-200 font-bold" : "text-zinc-900 dark:text-zinc-200"}`}>
+                      {post.is_notice && <span className="text-amber-600 dark:text-amber-400 mr-1">[공지]</span>}
                       {post.title}
                     </span>
                     {commentCount > 0 && (

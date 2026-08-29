@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, getAuthProfile } from "@/lib/auth";
 import { PostCreateForm } from "@/components/gallery/PostCreateForm";
 
 export const metadata: Metadata = {
@@ -8,15 +8,17 @@ export const metadata: Metadata = {
 };
 
 export default async function CreatePostPage() {
-  const user = await getAuthUser();
+  const [user, userProfile] = await Promise.all([getAuthUser(), getAuthProfile()]);
 
   if (!user) {
     redirect("/login?redirectTo=/posts/create");
   }
 
+  const isAdmin = userProfile?.role === "ADMIN";
+
   return (
     <div className="py-6">
-      <PostCreateForm />
+      <PostCreateForm isAdmin={isAdmin} />
     </div>
   );
 }

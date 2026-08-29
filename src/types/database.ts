@@ -50,6 +50,7 @@ export interface Database {
           image_urls: string[];
           view_count: number;
           like_count: number;
+          is_notice?: boolean;
           created_at: string;
           updated_at: string;
           deleted_at: string | null;
@@ -62,6 +63,7 @@ export interface Database {
           image_urls?: string[];
           view_count?: number;
           like_count?: number;
+          is_notice?: boolean;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
@@ -74,6 +76,7 @@ export interface Database {
           image_urls?: string[];
           view_count?: number;
           like_count?: number;
+          is_notice?: boolean;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;

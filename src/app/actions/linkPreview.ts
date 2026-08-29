@@ -104,14 +104,10 @@ export async function getLinkPreviewAction(rawUrl: string): Promise<LinkPreviewD
         const thumbnail = Array.isArray(post.image_urls) && post.image_urls.length > 0
           ? post.image_urls[0]
           : null;
-        const cleanBody = post.content
-          ? post.content.replace(/\n+/g, " ").trim().slice(0, 100)
-          : "사진 게시글";
-
         return {
           url: `/posts/${postId}`,
           title: post.title,
-          description: cleanBody,
+          description: "묵호 커뮤니티 사이트",
           image: thumbnail,
           siteName: `묵갤 • ${authorName}`,
           favicon: "/icons/icon-192x192.png",
