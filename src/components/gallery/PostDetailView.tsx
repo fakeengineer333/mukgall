@@ -243,7 +243,7 @@ export function PostDetailView({
                   />
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 group-hover/author:underline group-hover/author:text-blue-600 dark:group-hover/author:text-blue-400 transition-colors">
+                      <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 transition-colors">
                         {post.author?.username || "ㅇㅇ"}
                       </span>
                       {post.author?.role === "ADMIN" && (

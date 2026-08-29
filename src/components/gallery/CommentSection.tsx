@@ -14,7 +14,6 @@ import {
   ThumbsUp,
   Crown,
   ImagePlus,
-  ZoomIn,
   Loader2,
 } from "lucide-react";
 import { Comment, Profile, UserRole } from "@/types";
@@ -28,7 +27,6 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FormattedText } from "@/components/common/FormattedText";
-import { ImageViewerModal } from "@/components/common/ImageViewerModal";
 import { UserActionMenu } from "@/components/common/UserActionMenu";
 import { uploadImageToStorage } from "@/lib/storage";
 import { compressImage } from "@/lib/imageCompression";
@@ -64,7 +62,6 @@ export function CommentSection({
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -463,7 +460,7 @@ export function CommentSection({
                           size="sm"
                           className="h-5 w-5"
                         />
-                        <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 group-hover/buser:underline group-hover/buser:text-blue-600 dark:group-hover/buser:text-blue-400">
+                        <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
                           {best.author?.username || "익명"}
                         </span>
                       </div>
@@ -482,10 +479,7 @@ export function CommentSection({
                 )}
 
                 {best.image_url && (
-                  <div
-                    className="ml-7 mt-1.5 relative h-20 w-20 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-950 cursor-zoom-in"
-                    onClick={() => setViewerImageUrl(best.image_url!)}
-                  >
+                  <div className="ml-7 mt-1.5 relative h-24 w-24 sm:h-28 sm:w-28 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-750 bg-zinc-950">
                     <Image src={best.image_url} alt="베댓 짤" fill className="object-cover" />
                   </div>
                 )}
@@ -547,7 +541,7 @@ export function CommentSection({
                           size="sm"
                           className="h-6 w-6"
                         />
-                        <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 group-hover/cuser:underline group-hover/cuser:text-blue-600 dark:group-hover/cuser:text-blue-400">
+                        <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
                           {comment.author?.username || "익명"}
                         </span>
                       </div>
@@ -659,23 +653,15 @@ export function CommentSection({
                 {/* Comment Attached Image Thumbnail */}
                 {comment.image_url && !isDeleted && (
                   <div className={isReply ? "pl-5" : "pl-8"}>
-                    <div
-                      className="group/cimg relative max-w-[200px] sm:max-w-[240px] aspect-[4/3] rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-950 cursor-zoom-in shadow-xs"
-                      onClick={() => setViewerImageUrl(comment.image_url!)}
-                    >
+                    <div className="relative max-w-[200px] sm:max-w-[240px] aspect-[4/3] rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-950 shadow-xs">
                       <Image
                         src={comment.image_url}
                         alt="댓글 첨부 이미지"
                         fill
                         sizes="240px"
-                        className="object-cover group-hover/cimg:scale-105 transition-transform duration-200"
+                        className="object-cover"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-black/35 opacity-0 group-hover/cimg:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/80 text-white text-[11px] font-bold shadow-lg backdrop-blur-md">
-                          <ZoomIn className="h-3 w-3" /> 크게 보기
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -684,16 +670,6 @@ export function CommentSection({
           })
         )}
       </div>
-
-      {/* Lightbox for Comment Images */}
-      {viewerImageUrl && (
-        <ImageViewerModal
-          isOpen={Boolean(viewerImageUrl)}
-          onClose={() => setViewerImageUrl(null)}
-          images={[viewerImageUrl]}
-          title="댓글 이미지"
-        />
-      )}
     </div>
   );
 }

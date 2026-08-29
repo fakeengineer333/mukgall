@@ -250,8 +250,8 @@ export function DcPostList({
                           bio={post.author?.bio}
                           currentUserId={currentUserId}
                         >
-                          <div className="flex items-center gap-1 truncate max-w-[120px] group/a hover:opacity-80 transition-opacity">
-                            <span className="text-zinc-800 dark:text-zinc-300 truncate group-hover/a:underline group-hover/a:text-blue-600 dark:group-hover/a:text-blue-400">
+                          <div className="flex items-center gap-1 truncate max-w-[120px] hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+                            <span className="text-zinc-800 dark:text-zinc-300 truncate">
                               {post.author?.username || "ㅇㅇ"}
                             </span>
                             {isAuthorAdmin && (
@@ -349,7 +349,7 @@ export function DcPostList({
                         bio={post.author?.bio}
                         currentUserId={currentUserId}
                       >
-                        <span className="text-zinc-700 dark:text-zinc-300 hover:text-blue-500 underline underline-offset-2">
+                        <span className="text-zinc-700 dark:text-zinc-300">
                           {post.author?.username || "ㅇㅇ"}
                         </span>
                       </UserActionMenu>
