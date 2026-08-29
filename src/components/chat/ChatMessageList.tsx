@@ -7,6 +7,7 @@ import { Message, Profile } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/ui/avatar";
 import { FormattedText } from "@/components/common/FormattedText";
+import { ImageViewerModal } from "@/components/common/ImageViewerModal";
 import { useChat } from "@/providers/ChatProvider";
 import { fetchOlderMessagesAction } from "@/app/actions/chat";
 
@@ -658,21 +659,25 @@ export function ChatMessageList({
         </div>
       )}
 
-      {/* Image Modal Lightbox */}
+      {/* High Quality Lightbox / Vertical Scroll Image Viewer */}
       {previewImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md cursor-pointer"
-          onClick={() => setPreviewImage(null)}
-        >
-          <div className="relative max-w-3xl max-h-[85vh] w-full h-full flex items-center justify-center">
-            <Image
-              src={previewImage}
-              alt="Expanded Preview"
-              fill
-              className="object-contain"
-            />
-          </div>
-        </div>
+        <ImageViewerModal
+          isOpen={Boolean(previewImage)}
+          onClose={() => setPreviewImage(null)}
+          images={
+            messages.filter((m) => Boolean(m.image_url)).map((m) => m.image_url as string).length > 0
+              ? messages.filter((m) => Boolean(m.image_url)).map((m) => m.image_url as string)
+              : [previewImage]
+          }
+          initialIndex={Math.max(
+            0,
+            messages
+              .filter((m) => Boolean(m.image_url))
+              .map((m) => m.image_url as string)
+              .indexOf(previewImage)
+          )}
+          title="채팅 사진"
+        />
       )}
     </div>
   );

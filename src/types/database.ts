@@ -108,6 +108,8 @@ export interface Database {
           post_id: number;
           author_id: string | null;
           content: string;
+          image_url?: string | null;
+          like_count?: number;
           created_at: string;
           updated_at: string;
           deleted_at: string | null;
@@ -117,6 +119,8 @@ export interface Database {
           post_id: number;
           author_id?: string | null;
           content: string;
+          image_url?: string | null;
+          like_count?: number;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
@@ -126,6 +130,8 @@ export interface Database {
           post_id?: number;
           author_id?: string | null;
           content?: string;
+          image_url?: string | null;
+          like_count?: number;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;

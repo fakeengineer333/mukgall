@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/audit";
@@ -11,8 +12,8 @@ import { Comment } from "@/types";
 const commentSchema = z.object({
   content: z
     .string()
-    .min(1, "댓글 내용을 입력해주세요.")
     .max(1000, "댓글은 최대 1,000자까지 작성 가능합니다."),
+  image_url: z.string().nullable().optional(),
 });
 
 export interface CommentState {
@@ -40,20 +41,31 @@ export async function createCommentAction(
     return { error: "댓글 작성 요청이 너무 많습니다. 잠시 후 다시 작성해주세요." };
   }
 
-  const content = (formData.get("content") as string) || "";
-  const validated = commentSchema.safeParse({ content });
+  const content = ((formData.get("content") as string) || "").trim();
+  const imageUrlRaw = (formData.get("image_url") as string) || null;
+  const imageUrl = imageUrlRaw && imageUrlRaw.trim() ? imageUrlRaw.trim() : null;
+
+  if (!content && !imageUrl) {
+    return { error: "댓글 내용이나 이미지를 입력해주세요." };
+  }
+
+  const validated = commentSchema.safeParse({ content, image_url: imageUrl });
 
   if (!validated.success) {
     return { error: validated.error.issues[0]?.message || "입력값이 올바르지 않습니다." };
   }
 
+  const insertPayload = {
+    post_id: postId,
+    author_id: user.id,
+    content,
+    image_url: imageUrl,
+    like_count: 0,
+  };
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: newComment, error } = await (supabase.from("comments") as any)
-    .insert({
-      post_id: postId,
-      author_id: user.id,
-      content,
-    })
+    .insert(insertPayload)
     .select()
     .single();
 
@@ -61,11 +73,7 @@ export async function createCommentAction(
     const adminClient = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: fbComment, error: adminErr } = await (adminClient.from("comments") as any)
-      .insert({
-        post_id: postId,
-        author_id: user.id,
-        content,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
@@ -78,7 +86,7 @@ export async function createCommentAction(
       action: "COMMENT_CREATE",
       targetType: "comments",
       targetId: String(fbComment.id),
-      metadata: { postId, contentPreview: content.slice(0, 50) },
+      metadata: { postId, contentPreview: content.slice(0, 50), hasImage: Boolean(imageUrl) },
     });
 
     revalidatePath(`/posts/${postId}`);
@@ -90,11 +98,83 @@ export async function createCommentAction(
     action: "COMMENT_CREATE",
     targetType: "comments",
     targetId: String(newComment.id),
-    metadata: { postId, contentPreview: content.slice(0, 50) },
+    metadata: { postId, contentPreview: content.slice(0, 50), hasImage: Boolean(imageUrl) },
   });
 
   revalidatePath(`/posts/${postId}`);
   return { success: true, error: null };
+}
+
+export async function recommendCommentAction(
+  commentId: number,
+  postId: number
+): Promise<{ success: boolean; error?: string; newLikeCount?: number }> {
+  try {
+    const cookieStore = await cookies();
+    const cookieKey = `recommended_comment_${commentId}`;
+
+    if (cookieStore.get(cookieKey)) {
+      return { success: false, error: "이미 추천한 댓글입니다." };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    // Rate limit: max 20 recommendations per minute
+    const rateKey = user ? `recommend_comment:${user.id}` : `recommend_comment:anon`;
+    const rateLimit = await checkRateLimit(rateKey, 20, 60);
+    if (!rateLimit.success) {
+      return { success: false, error: "추천 요청이 너무 빠릅니다. 잠시 후 다시 시도해주세요." };
+    }
+
+    const adminClient = createAdminClient();
+
+    // Fetch current comment
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: comment, error: fetchErr } = await (adminClient.from("comments") as any)
+      .select("id, like_count")
+      .eq("id", commentId)
+      .maybeSingle();
+
+    if (fetchErr || !comment) {
+      return { success: false, error: "댓글을 찾을 수 없습니다." };
+    }
+
+    const currentLikes = comment.like_count || 0;
+    const nextLikes = currentLikes + 1;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let { error: updateErr } = await (supabase.from("comments") as any)
+      .update({ like_count: nextLikes })
+      .eq("id", commentId);
+
+    if (updateErr) {
+      // Fallback to adminClient
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const retryRes = await (adminClient.from("comments") as any)
+        .update({ like_count: nextLikes })
+        .eq("id", commentId);
+      updateErr = retryRes.error;
+    }
+
+    if (updateErr) {
+      return { success: false, error: updateErr.message };
+    }
+
+    // Set cookie to prevent duplicate recommendation (expires in 30 days)
+    cookieStore.set(cookieKey, "true", {
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+      httpOnly: true,
+    });
+
+    revalidatePath(`/posts/${postId}`);
+    return { success: true, newLikeCount: nextLikes };
+  } catch (err: any) {
+    return { success: false, error: err.message || "추천 처리 중 오류가 발생했습니다." };
+  }
 }
 
 export async function deleteCommentAction(

@@ -79,6 +79,17 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       postsQuery = postsQuery.ilike("title", `%${q}%`);
     } else if (type === "content") {
       postsQuery = postsQuery.ilike("content", `%${q}%`);
+    } else if (type === "author") {
+      const { data: matchingProfiles } = await supabase
+        .from("profiles")
+        .select("id")
+        .ilike("username", `%${q}%`);
+      const userIds = (matchingProfiles as { id: string }[] | null)?.map((p) => p.id) || [];
+      if (userIds.length > 0) {
+        postsQuery = postsQuery.in("author_id", userIds);
+      } else {
+        postsQuery = postsQuery.eq("author_id", "00000000-0000-0000-0000-000000000000");
+      }
     } else {
       postsQuery = postsQuery.or(`title.ilike.%${q}%,content.ilike.%${q}%`);
     }

@@ -15,6 +15,7 @@ import {
   Share2,
   ThumbsUp,
   Flame,
+  ZoomIn,
 } from "lucide-react";
 import { Post, Comment, Profile, UserRole } from "@/types";
 import { deletePostAction, restorePostAction, recommendPostAction } from "@/app/actions/post";
@@ -24,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CommentSection } from "@/components/gallery/CommentSection";
 import { FormattedText } from "@/components/common/FormattedText";
+import { ImageViewerModal } from "@/components/common/ImageViewerModal";
+import { UserActionMenu } from "@/components/common/UserActionMenu";
 import { formatDate } from "@/lib/utils";
 
 interface PostDetailViewProps {
@@ -43,6 +46,7 @@ export function PostDetailView({
 }: PostDetailViewProps) {
   const router = useRouter();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [likes, setLikes] = useState(post.like_count || 0);
   const [isLiked, setIsLiked] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -140,38 +144,55 @@ export function PostDetailView({
       <Card className="overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-2xl backdrop-blur-xl">
         {/* Gallery Image Display (Optional) */}
         {images.length > 0 && (
-          <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full bg-zinc-950 overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
+          <div
+            onClick={() => setIsViewerOpen(true)}
+            className="group relative aspect-[4/3] sm:aspect-[16/10] max-h-[560px] w-full bg-zinc-950 overflow-hidden border-b border-zinc-200 dark:border-zinc-800 cursor-zoom-in"
+          >
             <Image
               src={images[activeImageIndex]}
               alt={`${post.title} - ${activeImageIndex + 1}`}
               fill
               priority
               sizes="(max-width: 768px) 100vw, 800px"
-              className="object-contain"
+              className="object-contain transition-transform duration-300 group-hover:scale-[1.01]"
             />
+
+            {/* Hover overlay hint */}
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+              <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/80 text-white text-xs font-bold shadow-2xl backdrop-blur-md border border-white/20">
+                <ZoomIn className="h-4 w-4 text-blue-400" />
+                <span>클릭하여 크게 보기</span>
+              </div>
+            </div>
 
             {/* Carousel navigation controls if multiple images */}
             {images.length > 1 && (
               <>
                 <button
-                  onClick={() =>
-                    setActiveImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
-                  }
-                  className="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/80 transition-colors shadow-lg"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+                  }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/80 transition-colors shadow-lg z-10 cursor-pointer"
+                  title="이전 사진"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button
-                  onClick={() =>
-                    setActiveImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
-                  }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/80 transition-colors shadow-lg"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/80 transition-colors shadow-lg z-10 cursor-pointer"
+                  title="다음 사진"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
 
                 {/* Counter indicator */}
-                <div className="absolute bottom-3 right-3 rounded-full bg-black/70 backdrop-blur-md px-3 py-1 text-xs font-bold text-white shadow">
+                <div className="absolute bottom-3 right-3 rounded-full bg-black/70 backdrop-blur-md px-3 py-1 text-xs font-bold text-white shadow z-10">
                   {activeImageIndex + 1} / {images.length}
                 </div>
               </>
@@ -206,28 +227,37 @@ export function PostDetailView({
             </h1>
 
             <div className="flex items-center justify-between flex-wrap gap-3 pt-1 border-b border-zinc-200 dark:border-zinc-800/80 pb-4">
-              <div className="flex items-center gap-3">
-                <Avatar
-                  src={post.author?.avatar_url}
-                  fallbackText={post.author?.username || "ㅇㅇ"}
-                  size="md"
-                />
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                      {post.author?.username || "ㅇㅇ"}
-                    </span>
-                    {post.author?.role === "ADMIN" && (
-                      <Badge variant="admin" className="text-[10px] px-1.5 py-0">
-                        관리자
-                      </Badge>
-                    )}
+              <UserActionMenu
+                userId={post.author_id}
+                username={post.author?.username}
+                avatarUrl={post.author?.avatar_url}
+                userRole={post.author?.role}
+                bio={post.author?.bio}
+                currentUserId={currentUserId}
+              >
+                <div className="flex items-center gap-3 group/author hover:opacity-85 transition-opacity">
+                  <Avatar
+                    src={post.author?.avatar_url}
+                    fallbackText={post.author?.username || "ㅇㅇ"}
+                    size="md"
+                  />
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 group-hover/author:underline group-hover/author:text-blue-600 dark:group-hover/author:text-blue-400 transition-colors">
+                        {post.author?.username || "ㅇㅇ"}
+                      </span>
+                      {post.author?.role === "ADMIN" && (
+                        <Badge variant="admin" className="text-[10px] px-1.5 py-0">
+                          관리자
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-zinc-500">
+                      {formatDate(post.created_at)}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-zinc-500">
-                    {formatDate(post.created_at)}
-                  </p>
                 </div>
-              </div>
+              </UserActionMenu>
 
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-950 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
@@ -321,6 +351,15 @@ export function PostDetailView({
           />
         </CardContent>
       </Card>
+
+      {/* High Quality Lightbox / Vertical Scroll Image Viewer */}
+      <ImageViewerModal
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        images={images}
+        initialIndex={activeImageIndex}
+        title={post.title}
+      />
     </div>
   );
 }

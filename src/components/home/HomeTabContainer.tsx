@@ -203,6 +203,7 @@ export function HomeTabContainer({
           searchQuery={galleryProps.searchQuery}
           searchType={galleryProps.searchType}
           isAdmin={galleryProps.isAdmin}
+          currentUserId={userProfile?.id}
         />
       </div>
 

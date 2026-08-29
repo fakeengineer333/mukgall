@@ -20,6 +20,7 @@ import { Post, Profile } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { UserActionMenu } from "@/components/common/UserActionMenu";
 
 interface DcPostListProps {
   posts: Post[];
@@ -30,6 +31,7 @@ interface DcPostListProps {
   searchQuery: string;
   searchType: string;
   isAdmin?: boolean;
+  currentUserId?: string;
 }
 
 // Format date like DCInside (HH:mm if today, MM.DD if past) in KST
@@ -68,6 +70,7 @@ export function DcPostList({
   searchQuery,
   searchType,
   isAdmin,
+  currentUserId,
 }: DcPostListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -239,14 +242,23 @@ export function DcPostList({
 
                       {/* 글쓴이 */}
                       <td className="py-2.5 px-3 text-left">
-                        <div className="flex items-center gap-1 truncate max-w-[120px]">
-                          <span className="text-zinc-800 dark:text-zinc-300 truncate">
-                            {post.author?.username || "ㅇㅇ"}
-                          </span>
-                          {isAuthorAdmin && (
-                            <Shield className="h-3 w-3 text-amber-500 dark:text-amber-400 shrink-0" />
-                          )}
-                        </div>
+                        <UserActionMenu
+                          userId={post.author_id}
+                          username={post.author?.username}
+                          avatarUrl={post.author?.avatar_url}
+                          userRole={post.author?.role}
+                          bio={post.author?.bio}
+                          currentUserId={currentUserId}
+                        >
+                          <div className="flex items-center gap-1 truncate max-w-[120px] group/a hover:opacity-80 transition-opacity">
+                            <span className="text-zinc-800 dark:text-zinc-300 truncate group-hover/a:underline group-hover/a:text-blue-600 dark:group-hover/a:text-blue-400">
+                              {post.author?.username || "ㅇㅇ"}
+                            </span>
+                            {isAuthorAdmin && (
+                              <Shield className="h-3 w-3 text-amber-500 dark:text-amber-400 shrink-0" />
+                            )}
+                          </div>
+                        </UserActionMenu>
                       </td>
 
                       {/* 작성일 */}
@@ -329,7 +341,18 @@ export function DcPostList({
 
                   <div className="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400">
                     <div className="flex items-center gap-1">
-                      <span className="text-zinc-700 dark:text-zinc-300">{post.author?.username || "ㅇㅇ"}</span>
+                      <UserActionMenu
+                        userId={post.author_id}
+                        username={post.author?.username}
+                        avatarUrl={post.author?.avatar_url}
+                        userRole={post.author?.role}
+                        bio={post.author?.bio}
+                        currentUserId={currentUserId}
+                      >
+                        <span className="text-zinc-700 dark:text-zinc-300 hover:text-blue-500 underline underline-offset-2">
+                          {post.author?.username || "ㅇㅇ"}
+                        </span>
+                      </UserActionMenu>
                       <span>•</span>
                       <span suppressHydrationWarning>{post.formatted_date || formatDcDate(post.created_at)}</span>
                     </div>
