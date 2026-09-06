@@ -4,6 +4,8 @@ import React, { useMemo } from "react";
 import Link from "next/link";
 import { CornerDownRight } from "lucide-react";
 import { LinkPreviewCard } from "@/components/common/LinkPreviewCard";
+import { YouTubeEmbed } from "@/components/common/YouTubeEmbed";
+import { extractYouTubeInfo, YouTubeInfo } from "@/lib/youtube";
 
 interface FormattedTextProps {
   content: string;
@@ -54,8 +56,30 @@ export function FormattedText({
     const matches = cleanContent.match(URL_REGEX);
     if (!matches) return [];
     const normalizedList = matches.map((m) => toValidHref(m));
-    return Array.from(new Set(normalizedList)).slice(0, 2);
+    return Array.from(new Set(normalizedList)).slice(0, 4);
   }, [cleanContent]);
+
+  // Separate YouTube videos from standard web links
+  const { youtubeItems, linkPreviewUrls } = useMemo(() => {
+    const ytList: YouTubeInfo[] = [];
+    const otherList: string[] = [];
+
+    for (const u of urls) {
+      const yt = extractYouTubeInfo(u);
+      if (yt) {
+        if (!ytList.some((item) => item.videoId === yt.videoId)) {
+          ytList.push(yt);
+        }
+      } else {
+        otherList.push(u);
+      }
+    }
+
+    return {
+      youtubeItems: ytList.slice(0, 2),
+      linkPreviewUrls: otherList.slice(0, 2),
+    };
+  }, [urls]);
 
   // Tokenize text into plain text chunks and clickable URL links
   const renderedContent = useMemo(() => {
@@ -147,10 +171,24 @@ export function FormattedText({
         {renderedContent}
       </p>
 
+      {/* Embedded YouTube Video Players */}
+      {showPreview && youtubeItems.length > 0 && (
+        <div className="space-y-3 pt-1.5 w-full">
+          {youtubeItems.map((yt) => (
+            <YouTubeEmbed
+              key={yt.videoId}
+              videoId={yt.videoId}
+              startTime={yt.startTime}
+              originalUrl={yt.originalUrl}
+            />
+          ))}
+        </div>
+      )}
+
       {/* OpenGraph Rich Preview Cards */}
-      {showPreview && urls.length > 0 && (
+      {showPreview && linkPreviewUrls.length > 0 && (
         <div className="space-y-2 pt-1 w-full overflow-hidden">
-          {urls.map((targetUrl) => (
+          {linkPreviewUrls.map((targetUrl) => (
             <LinkPreviewCard
               key={targetUrl}
               url={targetUrl}
@@ -163,3 +201,4 @@ export function FormattedText({
     </div>
   );
 }
+
