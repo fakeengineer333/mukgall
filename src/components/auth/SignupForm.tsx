@@ -28,6 +28,7 @@ import {
 } from "@/app/actions/auth";
 import { createClient } from "@/lib/supabase/client";
 import { uploadImageToStorage } from "@/lib/storage";
+import { sanitizeRedirectPath } from "@/lib/urlSafety";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +37,7 @@ import { Avatar } from "@/components/ui/avatar";
 export function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/";
+  const redirectTo = sanitizeRedirectPath(searchParams.get("redirectTo"), "/");
 
   // Step 1: Initial signup action state
   const initialSignupState: AuthState = { error: null };
@@ -67,8 +68,8 @@ export function SignupForm() {
   // Duplicate check status
   const [usernameCheck, setUsernameCheck] = useState<{ checked: boolean; available: boolean; message: string } | null>(null);
   const [emailCheck, setEmailCheck] = useState<{ checked: boolean; available: boolean; message: string } | null>(null);
-  const [isCheckingUsername, startUsernameCheck] = useTransition();
-  const [isCheckingEmail, startEmailCheck] = useTransition();
+  const [, startUsernameCheck] = useTransition();
+  const [, startEmailCheck] = useTransition();
 
   // Resend state
   const [resendStatus, setResendStatus] = useState<string | null>(null);

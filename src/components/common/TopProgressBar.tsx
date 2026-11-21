@@ -1,25 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 export function TopProgressBar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [loading, setLoading] = useState(false);
+  const routeKey = `${pathname}?${searchParams.toString()}`;
+  const [loadingFromRoute, setLoadingFromRoute] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  // Finish progress on route update
-  useEffect(() => {
-    if (loading) {
-      setProgress(100);
-      const timer = setTimeout(() => {
-        setLoading(false);
-        setTimeout(() => setProgress(0), 200);
-      }, 400);
-      return () => clearTimeout(timer);
+  const clearTimers = () => {
+    for (const timer of timersRef.current) {
+      clearTimeout(timer);
     }
-  }, [pathname, searchParams]);
+    timersRef.current = [];
+  };
+
+  // Finish progress asynchronously when route changes
+  useEffect(() => {
+    if (!loadingFromRoute || loadingFromRoute === routeKey) {
+      return;
+    }
+
+    clearTimers();
+    const finishTimer = setTimeout(() => {
+      setProgress(100);
+      const hideTimer = setTimeout(() => {
+        setLoadingFromRoute(null);
+        setProgress(0);
+      }, 400);
+      timersRef.current.push(hideTimer);
+    }, 0);
+    timersRef.current.push(finishTimer);
+
+    return () => {
+      clearTimers();
+    };
+  }, [loadingFromRoute, routeKey]);
 
   // Start progress on internal link click
   useEffect(() => {
@@ -42,14 +61,19 @@ export function TopProgressBar() {
       ) {
         const currentUrl = window.location.pathname + window.location.search;
         if (href !== currentUrl) {
-          setLoading(true);
+          clearTimers();
+          const currentRouteKey = `${window.location.pathname}?${new URLSearchParams(window.location.search).toString()}`;
+          setLoadingFromRoute(currentRouteKey);
           setProgress(35);
-          const t1 = setTimeout(() => setProgress((p) => (p < 75 ? 75 : p)), 150);
-          const t2 = setTimeout(() => setProgress((p) => (p < 90 ? 90 : p)), 350);
-          return () => {
-            clearTimeout(t1);
-            clearTimeout(t2);
-          };
+          const t1 = setTimeout(
+            () => setProgress((p) => (p < 75 ? 75 : p)),
+            150
+          );
+          const t2 = setTimeout(
+            () => setProgress((p) => (p < 90 ? 90 : p)),
+            350
+          );
+          timersRef.current.push(t1, t2);
         }
       }
     };
@@ -57,10 +81,11 @@ export function TopProgressBar() {
     document.addEventListener("click", handleAnchorClick, { capture: true });
     return () => {
       document.removeEventListener("click", handleAnchorClick, { capture: true });
+      clearTimers();
     };
   }, []);
 
-  if (!loading && progress === 0) return null;
+  if (!loadingFromRoute && progress === 0) return null;
 
   return (
     <div

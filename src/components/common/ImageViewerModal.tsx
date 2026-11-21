@@ -36,22 +36,24 @@ export function ImageViewerModal({
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isLongImage, setIsLongImage] = useState(false);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  // Sync initialIndex when modal opens
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+  const [prevInitialIndex, setPrevInitialIndex] = useState(initialIndex);
+  if (isOpen !== prevOpen || initialIndex !== prevInitialIndex) {
+    setPrevOpen(isOpen);
+    setPrevInitialIndex(initialIndex);
     if (isOpen) {
       setCurrentIndex(initialIndex);
       setZoomLevel(1);
     }
-  }, [isOpen, initialIndex]);
+  }
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const currentImageUrl = images[currentIndex] || "";
 
-  // Reset scroll and zoom on index or mode change
+  // Reset scroll on index or mode change
   useEffect(() => {
-    setZoomLevel(1);
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
       containerRef.current.scrollLeft = 0;
@@ -77,11 +79,13 @@ export function ImageViewerModal({
   const handlePrev = useCallback(() => {
     if (images.length <= 1) return;
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    setZoomLevel(1);
   }, [images.length]);
 
   const handleNext = useCallback(() => {
     if (images.length <= 1) return;
     setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    setZoomLevel(1);
   }, [images.length]);
 
   const handleZoomIn = () => {
@@ -240,7 +244,7 @@ export function ImageViewerModal({
           {/* Download Original Image */}
           <a
             href={currentImageUrl}
-            download={`mukgall-${Date.now()}.png`}
+            download={`mukgall-${currentIndex + 1}.png`}
             target="_blank"
             rel="noopener noreferrer"
             className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors"
@@ -323,6 +327,8 @@ export function ImageViewerModal({
             width: viewMode === "fit-width" ? `${Math.min(100 * zoomLevel, 100)}%` : undefined,
           }}
         >
+          {/* Lightbox renders arbitrary remote images at natural aspect ratio without Next optimization constraints */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             ref={imgRef}
             src={currentImageUrl}
@@ -354,13 +360,18 @@ export function ImageViewerModal({
             <button
               key={idx}
               type="button"
-              onClick={() => setCurrentIndex(idx)}
+              onClick={() => {
+                setCurrentIndex(idx);
+                setZoomLevel(1);
+              }}
               className={`relative h-10 w-10 sm:h-12 sm:w-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
                 currentIndex === idx
                   ? "border-blue-500 scale-105 ring-2 ring-blue-500/30"
                   : "border-zinc-800 opacity-60 hover:opacity-100"
               }`}
             >
+              {/* Thumbnail preview in modal strip */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={img} alt="" className="h-full w-full object-cover" />
             </button>
           ))}

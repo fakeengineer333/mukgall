@@ -5,18 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
   Image as ImageIcon,
-  MessageSquare,
-  ThumbsUp,
   Search,
   PenSquare,
-  Sparkles,
   Flame,
   ChevronLeft,
   ChevronRight,
   Shield,
-  Trash2,
 } from "lucide-react";
-import { Post, Profile } from "@/types";
+import { Post } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -69,7 +65,6 @@ export function DcPostList({
   currentTab,
   searchQuery,
   searchType,
-  isAdmin,
   currentUserId,
 }: DcPostListProps) {
   const router = useRouter();

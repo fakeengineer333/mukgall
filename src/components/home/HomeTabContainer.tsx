@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MessageSquare, PenSquare, User, LogIn, Loader2 } from "lucide-react";
+import { MessageSquare, PenSquare, User, LogIn } from "lucide-react";
 import { fetchUserChatRoomsAction } from "@/app/actions/chat";
 import { fetchUserActivityAction } from "@/app/actions/post";
 import { DcPostList } from "@/components/gallery/DcPostList";
@@ -48,6 +48,11 @@ export function HomeTabContainer({
   myPageProps,
 }: HomeTabContainerProps) {
   const [activeView, setActiveView] = useState<"gallery" | "chat" | "mypage">(initialView);
+  const [prevInitialView, setPrevInitialView] = useState<"gallery" | "chat" | "mypage">(initialView);
+  if (initialView !== prevInitialView) {
+    setPrevInitialView(initialView);
+    setActiveView(initialView);
+  }
 
   // In-memory cached data states
   const [rooms, setRooms] = useState<ChatRoom[]>(chatProps.rooms);
@@ -57,13 +62,8 @@ export function HomeTabContainer({
   const [loadingMyPage, setLoadingMyPage] = useState(false);
   const [chatLoaded, setChatLoaded] = useState(chatProps.rooms.length > 0);
   const [myPageLoaded, setMyPageLoaded] = useState(myPageProps.posts.length > 0 || myPageProps.comments.length > 0);
-
-  // Sync state if initialView changes
-  useEffect(() => {
-    if (initialView && initialView !== activeView) {
-      setActiveView(initialView);
-    }
-  }, [initialView]);
+  const loadingChatRef = useRef(false);
+  const loadingMyPageRef = useRef(false);
 
   // Synchronize document.title based on active tab
   useEffect(() => {
@@ -83,36 +83,54 @@ export function HomeTabContainer({
 
     const prefetchIdle = () => {
       // 1. Prefetch Chat Rooms in background
-      if (!chatLoaded && !loadingChat) {
+      if (!chatLoaded && !loadingChatRef.current) {
+        loadingChatRef.current = true;
+        setLoadingChat(true);
         fetchUserChatRoomsAction()
           .then((data) => {
             setRooms(data);
             setChatLoaded(true);
           })
-          .catch(() => {});
+          .catch(() => {})
+          .finally(() => {
+            loadingChatRef.current = false;
+            setLoadingChat(false);
+          });
       }
 
       // 2. Prefetch MyPage Activity in background
-      if (!myPageLoaded && !loadingMyPage) {
+      if (!myPageLoaded && !loadingMyPageRef.current) {
+        loadingMyPageRef.current = true;
+        setLoadingMyPage(true);
         fetchUserActivityAction()
           .then((data) => {
             setUserPosts(data.posts);
             setUserComments(data.comments);
             setMyPageLoaded(true);
           })
-          .catch(() => {});
+          .catch(() => {})
+          .finally(() => {
+            loadingMyPageRef.current = false;
+            setLoadingMyPage(false);
+          });
       }
     };
 
-    // Use requestIdleCallback if supported, else setTimeout
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      const handle = (window as any).requestIdleCallback(prefetchIdle, { timeout: 1500 });
-      return () => (window as any).cancelIdleCallback(handle);
+    if (
+      typeof window !== "undefined" &&
+      typeof window.requestIdleCallback === "function"
+    ) {
+      const handle = window.requestIdleCallback(prefetchIdle, { timeout: 1500 });
+      return () => {
+        if (typeof window.cancelIdleCallback === "function") {
+          window.cancelIdleCallback(handle);
+        }
+      };
     } else {
       const timer = setTimeout(prefetchIdle, 600);
       return () => clearTimeout(timer);
     }
-  }, [userProfile, chatLoaded, myPageLoaded, loadingChat, loadingMyPage]);
+  }, [userProfile, chatLoaded, myPageLoaded]);
 
   // Listen to browser Back / Forward (PopState)
   useEffect(() => {
@@ -232,7 +250,7 @@ export function HomeTabContainer({
             </div>
           ) : (
             <ChatRoomList
-              rooms={rooms as any}
+              rooms={rooms}
               currentUserId={userProfile.id}
             />
           )

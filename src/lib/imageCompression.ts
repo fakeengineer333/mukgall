@@ -18,7 +18,7 @@ export async function compressImage(
     return { file, previewUrl: URL.createObjectURL(file) };
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();

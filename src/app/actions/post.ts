@@ -1,7 +1,6 @@
 "use server";
 
 import { z } from "zod";
-import crypto from "crypto";
 import { headers, cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -10,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
+import { hashClientFingerprint } from "@/lib/ssrfGuard";
 import { Post, Comment } from "@/types";
 
 const postSchema = z.object({
@@ -262,31 +262,27 @@ export async function recommendPostAction(
       return { success: false, error: "이미 추천한 게시글입니다." };
     }
 
+    const headersList = await headers();
+    const forwardedFor = headersList.get("x-forwarded-for");
+    const clientIp = forwardedFor
+      ? forwardedFor.split(",")[0].trim()
+      : headersList.get("x-real-ip") || "127.0.0.1";
+    const userAgent = headersList.get("user-agent") || "";
+    const ipHash = hashClientFingerprint(clientIp, userAgent);
+
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Rate Limiting on recommendations
-    const idKey = user ? user.id : "anon";
+    // Rate Limiting on recommendations (per-user or per-client fingerprint)
+    const idKey = user ? user.id : `ip:${ipHash}`;
     const rateLimitRes = await checkRateLimit(`post_recommend:${idKey}`, 20, 60);
     if (!rateLimitRes.success) {
       return { success: false, error: "추천 요청이 너무 빠릅니다." };
     }
 
     // Call increment_post_like RPC if available
-    const headersList = await headers();
-    const forwardedFor = headersList.get("x-forwarded-for");
-    const clientIp = forwardedFor
-      ? forwardedFor.split(",")[0].trim()
-      : headersList.get("x-real-ip") || "127.0.0.1";
-
-    const userAgent = headersList.get("user-agent") || "";
-    const ipHash = crypto
-      .createHash("sha256")
-      .update(`${clientIp}-${userAgent}`)
-      .digest("hex");
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rpcRes, error: rpcErr } = await (supabase as any).rpc("increment_post_like", {
       p_post_id: postId,
@@ -307,6 +303,21 @@ export async function recommendPostAction(
       revalidatePath(`/posts/${postId}`);
       revalidatePath("/");
       return { success: true, newLikeCount: parsed.new_like_count };
+    }
+
+    if (rpcErr) {
+      if (rpcErr.code === "23505") {
+        return { success: false, error: "이미 추천한 게시글입니다." };
+      }
+      const msgLower = rpcErr.message?.toLowerCase() || "";
+      const isMissingRpc =
+        rpcErr.code === "42883" ||
+        rpcErr.code === "PGRST202" ||
+        msgLower.includes("could not find the function") ||
+        msgLower.includes("does not exist");
+      if (!isMissingRpc) {
+        return { success: false, error: rpcErr.message || "추천 처리 중 오류가 발생했습니다." };
+      }
     }
 
     // Direct fallback logic
@@ -350,8 +361,10 @@ export async function recommendPostAction(
     revalidatePath(`/posts/${postId}`);
     revalidatePath("/");
     return { success: true, newLikeCount: nextLikes };
-  } catch (err: any) {
-    return { success: false, error: err.message || "추천 처리 중 오류가 발생했습니다." };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "추천 처리 중 오류가 발생했습니다.";
+    return { success: false, error: message };
   }
 }
 
@@ -475,10 +488,11 @@ export async function incrementViewCount(postId: number): Promise<void> {
       : headersList.get("x-real-ip") || "127.0.0.1";
 
     const userAgent = headersList.get("user-agent") || "";
-    const ipHash = crypto
-      .createHash("sha256")
-      .update(`${clientIp}-${userAgent}-${new Date().toISOString().slice(0, 10)}`)
-      .digest("hex");
+    const ipHash = hashClientFingerprint(
+      clientIp,
+      userAgent,
+      new Date().toISOString().slice(0, 10)
+    );
 
     const supabase = await createClient();
     const {

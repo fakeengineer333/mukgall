@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState, useEffect } from "react";
+import { useState, useActionState } from "react";
 import { Camera, Edit3, Loader2, AlertCircle, CheckCircle2, X } from "lucide-react";
 import { Profile } from "@/types";
 import { updateProfileAction, ProfileState } from "@/app/actions/profile";
@@ -29,16 +29,14 @@ export function ProfileEditModal({ profile }: ProfileEditModalProps) {
   } | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
 
-  // Reset form when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setUsername(profile.username);
-      setBio(profile.bio || "");
-      setAvatarUrl(profile.avatar_url || "");
-      setAvatarPreview(null);
-      setUsernameCheck(null);
-    }
-  }, [isOpen, profile]);
+  const handleOpenModal = () => {
+    setUsername(profile.username);
+    setBio(profile.bio || "");
+    setAvatarUrl(profile.avatar_url || "");
+    setAvatarPreview(null);
+    setUsernameCheck(null);
+    setIsOpen(true);
+  };
 
   const handleCheckUsername = async (valueToCheck?: string) => {
     const val = (valueToCheck !== undefined ? valueToCheck : username).trim();
@@ -95,7 +93,7 @@ export function ProfileEditModal({ profile }: ProfileEditModalProps) {
         variant="outline"
         size="sm"
         className="gap-1.5 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-700 font-medium shadow-sm"
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpenModal}
       >
         <Edit3 className="h-3.5 w-3.5 text-zinc-700 dark:text-white shrink-0" />
         <span>프로필 수정</span>

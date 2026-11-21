@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/ratelimit";
+import { sanitizeRedirectPath } from "@/lib/urlSafety";
 
 const RESERVED_USERNAMES = [
   "묵호",
@@ -164,7 +165,7 @@ export async function loginAction(
 ): Promise<AuthState> {
   const email = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
-  const redirectTo = (formData.get("redirectTo") as string) || "/";
+  const redirectTo = sanitizeRedirectPath(formData.get("redirectTo") as string | null, "/");
 
   const validated = loginSchema.safeParse({ email, password });
   if (!validated.success) {
@@ -217,7 +218,7 @@ export async function signupAction(
   const username = (formData.get("username") as string)?.trim();
   const bio = (formData.get("bio") as string) || "";
   const avatar_url = (formData.get("avatar_url") as string) || "";
-  const redirectTo = (formData.get("redirectTo") as string) || "/";
+  const redirectTo = sanitizeRedirectPath(formData.get("redirectTo") as string | null, "/");
 
   const validated = signupSchema.safeParse({
     email,
@@ -353,7 +354,7 @@ export async function verifySignupOtpAction(
   const username = (formData.get("username") as string)?.trim() || "";
   const bio = (formData.get("bio") as string) || "";
   const avatar_url = (formData.get("avatar_url") as string) || "";
-  const redirectTo = (formData.get("redirectTo") as string) || "/";
+  const redirectTo = sanitizeRedirectPath(formData.get("redirectTo") as string | null, "/");
 
   if (!email || !token) {
     return {
@@ -441,8 +442,10 @@ export async function resendSignupOtpAction(email: string): Promise<{ success: b
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "인증 코드 재발송 중 오류가 발생했습니다.";
+    return { success: false, error: message };
   }
 }
 

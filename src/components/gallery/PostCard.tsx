@@ -3,15 +3,13 @@ import Image from "next/image";
 import { Eye, MessageSquare, Layers, Trash2 } from "lucide-react";
 import { Post } from "@/types";
 import { Avatar } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/utils";
 
 interface PostCardProps {
   post: Post;
   isAdmin?: boolean;
 }
 
-export function PostCard({ post, isAdmin }: PostCardProps) {
+export function PostCard({ post }: PostCardProps) {
   const coverImage = post.image_urls?.[0] || "/icons/icon-512.svg";
   const imageCount = post.image_urls?.length || 0;
   const isDeleted = Boolean(post.deleted_at);

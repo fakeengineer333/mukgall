@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Shield, Search, Filter, Clock, Globe, Code, Eye, RefreshCw, X } from "lucide-react";
-import { AuditLog, AuditAction } from "@/types";
+import { Search, Globe, Code, Eye, RefreshCw, X } from "lucide-react";
+import { AuditLog, Json } from "@/types";
 import { fetchAuditLogsAction } from "@/app/actions/admin";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatDate } from "@/lib/utils";
 
 interface AuditLogsViewerProps {
   initialLogs: AuditLog[];
@@ -34,7 +33,7 @@ export function AuditLogsViewer({ initialLogs }: AuditLogsViewerProps) {
   const [logs, setLogs] = useState<AuditLog[]>(initialLogs);
   const [selectedAction, setSelectedAction] = useState("ALL");
   const [search, setSearch] = useState("");
-  const [selectedMetadata, setSelectedMetadata] = useState<{ id: number; metadata: any } | null>(null);
+  const [selectedMetadata, setSelectedMetadata] = useState<{ id: number; metadata: Json } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleRefresh = (action = selectedAction, query = search) => {

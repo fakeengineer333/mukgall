@@ -9,8 +9,17 @@ const PWA_DISMISS_KEY = "pwa_prompt_dismissed_until";
 const PWA_INSTALLED_KEY = "pwa_installed";
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
+interface NavigatorWithStandalone extends Navigator {
+  standalone?: boolean;
+}
+
 export function PwaInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
@@ -18,7 +27,7 @@ export function PwaInstallPrompt() {
     const isStandalone =
       typeof window !== "undefined" &&
       (window.matchMedia("(display-mode: standalone)").matches ||
-        (navigator as any).standalone === true);
+        (navigator as NavigatorWithStandalone).standalone === true);
 
     if (isStandalone) return;
 
@@ -36,7 +45,7 @@ export function PwaInstallPrompt() {
 
     const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowPrompt(true);
     };
 

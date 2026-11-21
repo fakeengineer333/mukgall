@@ -1,12 +1,11 @@
 "use server";
 
-import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient, isServiceRoleConfigured } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/ratelimit";
-import { Profile, Message, ChatRoom } from "@/types";
+import { Profile, Message, ChatRoom, Database } from "@/types";
 
 export async function searchUsersAction(query: string): Promise<Profile[]> {
   const supabase = await createClient();
@@ -71,19 +70,25 @@ export async function createChatRoomAction({
     const { data: myRooms } = await (supabase.from("chat_participants") as any)
       .select("room_id, chat_rooms!inner(is_group)")
       .eq("user_id", user.id)
+      .is("left_at", null)
       .eq("chat_rooms.is_group", false);
 
     if (myRooms && myRooms.length > 0) {
-      for (const r of myRooms) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { count } = await (supabase.from("chat_participants") as any)
-          .select("*", { count: "exact", head: true })
-          .eq("room_id", r.room_id)
-          .is("left_at", null);
+      const roomIds = (myRooms as { room_id: string }[]).map((r) => r.room_id);
+      const { data: activeParts } = await supabase
+        .from("chat_participants")
+        .select("room_id")
+        .in("room_id", roomIds)
+        .is("left_at", null);
 
-        if (count === 1) {
-          return { success: true, roomId: r.room_id };
-        }
+      const counts = new Map<string, number>();
+      for (const row of (activeParts || []) as { room_id: string }[]) {
+        counts.set(row.room_id, (counts.get(row.room_id) || 0) + 1);
+      }
+
+      const existingSelfRoomId = roomIds.find((rid) => counts.get(rid) === 1);
+      if (existingSelfRoomId) {
+        return { success: true, roomId: existingSelfRoomId };
       }
     }
   } else if (!isGroup && targetUserIds.length === 1) {
@@ -250,7 +255,11 @@ export async function sendMessageAction({
   content,
   imageUrl,
   messageType = "TEXT",
-}: SendMessageParams): Promise<{ success: boolean; error?: string; message?: any }> {
+}: SendMessageParams): Promise<{
+  success: boolean;
+  error?: string;
+  message?: Message & { sender?: Profile | null };
+}> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -326,6 +335,19 @@ export async function leaveChatRoomAction(
     return { success: false, error: "로그인이 필요합니다." };
   }
 
+  // Verify user is currently an active participant before inserting system message
+  const { data: myPart } = await supabase
+    .from("chat_participants")
+    .select("left_at")
+    .eq("room_id", roomId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const participantRow = myPart as { left_at: string | null } | null;
+  if (!participantRow || participantRow.left_at !== null) {
+    return { success: false, error: "대화방에 참여 중이지 않습니다." };
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("username")
@@ -334,7 +356,16 @@ export async function leaveChatRoomAction(
 
   const username = (profile as { username?: string } | null)?.username || "사용자";
 
-  // Mark left_at using user's supabase client
+  // Send system message while user is still an active participant (passes RLS)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("messages") as any).insert({
+    room_id: roomId,
+    sender_id: user.id,
+    content: `${username}님이 대화방을 나갔습니다.`,
+    message_type: "SYSTEM",
+  });
+
+  // Mark left_at after posting system message
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from("chat_participants") as any)
     .update({ left_at: new Date().toISOString() })
@@ -344,15 +375,6 @@ export async function leaveChatRoomAction(
   if (error) {
     return { success: false, error: error.message };
   }
-
-  // Send system message that user left
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from("messages") as any).insert({
-    room_id: roomId,
-    sender_id: user.id,
-    content: `${username}님이 대화방을 나갔습니다.`,
-    message_type: "SYSTEM",
-  });
 
   // Record audit log
   await recordAuditLog({
@@ -529,6 +551,22 @@ export async function fetchOlderMessagesAction({
   return ((data || []) as unknown as (Message & { sender?: Profile | null })[]).reverse();
 }
 
+interface ParticipantWithProfile {
+  room_id: string;
+  user_id: string;
+  joined_at: string;
+  left_at: string | null;
+  profile: Profile | null;
+}
+
+type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
+
+interface ChatRoomSummaryRow {
+  room_id: string;
+  last_message: MessageRow | null;
+  unread_count: number;
+}
+
 export async function fetchUserChatRoomsAction(): Promise<ChatRoom[]> {
   const supabase = await createClient();
   const {
@@ -538,12 +576,13 @@ export async function fetchUserChatRoomsAction(): Promise<ChatRoom[]> {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: myParts } = await (supabase.from("chat_participants") as any)
-    .select("room_id, last_read_at, left_at")
+    .select("room_id, joined_at, last_read_at, left_at")
     .eq("user_id", user.id)
     .is("left_at", null);
 
   const myParticipations = (myParts || []) as {
     room_id: string;
+    joined_at: string;
     last_read_at: string;
     left_at: string | null;
   }[];
@@ -552,44 +591,84 @@ export async function fetchUserChatRoomsAction(): Promise<ChatRoom[]> {
 
   const roomIds = myParticipations.map((p) => p.room_id);
 
-  const [roomsRes, allPartsRes, allMsgsRes] = await Promise.all([
-    supabase.from("chat_rooms").select("*").in("id", roomIds).order("created_at", { ascending: false }),
+  const [roomsRes, allPartsRes, summaryRes] = await Promise.all([
+    supabase
+      .from("chat_rooms")
+      .select("*")
+      .in("id", roomIds)
+      .order("created_at", { ascending: false }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from("chat_participants") as any)
       .select("room_id, user_id, joined_at, left_at, profile:profiles(*)")
       .in("room_id", roomIds)
       .is("left_at", null),
-    supabase.from("messages").select("*").in("room_id", roomIds).order("created_at", { ascending: false }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any).rpc("get_user_chat_rooms_summary"),
   ]);
 
   const roomsData = (roomsRes.data || []) as unknown as ChatRoom[];
-  const allParticipants = (allPartsRes.data || []) as any[];
-  const allMessages = (allMsgsRes.data || []) as any[];
+  const allParticipants = (allPartsRes.data || []) as ParticipantWithProfile[];
+
+  const summaryMap = new Map<string, ChatRoomSummaryRow>();
+  if (!summaryRes.error && Array.isArray(summaryRes.data)) {
+    for (const row of summaryRes.data as ChatRoomSummaryRow[]) {
+      summaryMap.set(row.room_id, row);
+    }
+  } else {
+    // Fallback when RPC is not yet deployed: bounded per-room summary queries
+    const fallbackSummaries = await Promise.all(
+      myParticipations.map(async (part): Promise<ChatRoomSummaryRow> => {
+        const joinedAt = part.joined_at || "1970-01-01T00:00:00Z";
+        const lastRead = part.last_read_at || "1970-01-01T00:00:00Z";
+
+        const [lastMsgRes, unreadRes] = await Promise.all([
+          supabase
+            .from("messages")
+            .select("*")
+            .eq("room_id", part.room_id)
+            .gte("created_at", joinedAt)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from("messages")
+            .select("id", { count: "exact", head: true })
+            .eq("room_id", part.room_id)
+            .neq("sender_id", user.id)
+            .gt("created_at", lastRead)
+            .gte("created_at", joinedAt),
+        ]);
+
+        return {
+          room_id: part.room_id,
+          last_message: (lastMsgRes.data as MessageRow | null) || null,
+          unread_count: unreadRes.count || 0,
+        };
+      })
+    );
+
+    for (const item of fallbackSummaries) {
+      summaryMap.set(item.room_id, item);
+    }
+  }
 
   return roomsData
     .map((room) => {
-      const myPart = myParticipations.find((p) => p.room_id === room.id);
       const roomParticipants = allParticipants.filter((p) => p.room_id === room.id);
       const otherParticipant = roomParticipants.find((p) => p.user_id !== user.id);
-      const isSelfChat = !room.is_group && (roomParticipants.length === 1 || !otherParticipant);
-      const myProfileObj = roomParticipants.find((p) => p.user_id === user.id)?.profile || null;
-      const roomMessages = allMessages.filter((m) => m.room_id === room.id);
-      const lastMessage = roomMessages[0] || null;
-
-      const lastReadTime = myPart?.last_read_at ? new Date(myPart.last_read_at).getTime() : 0;
-      const unreadCount = isSelfChat
-        ? 0
-        : roomMessages.filter(
-            (m) => m.sender_id !== user.id && new Date(m.created_at).getTime() > lastReadTime
-          ).length;
+      const isSelfChat =
+        !room.is_group && (roomParticipants.length === 1 || !otherParticipant);
+      const myProfileObj =
+        roomParticipants.find((p) => p.user_id === user.id)?.profile || null;
+      const summary = summaryMap.get(room.id);
 
       return {
         ...room,
         name: isSelfChat ? myProfileObj?.username || "나" : room.name,
         otherUser: isSelfChat ? myProfileObj : otherParticipant?.profile || null,
         participantCount: roomParticipants.length,
-        last_message: lastMessage,
-        unread_count: unreadCount,
+        last_message: summary?.last_message || null,
+        unread_count: isSelfChat ? 0 : summary?.unread_count || 0,
       };
     })
     .sort((a, b) => {

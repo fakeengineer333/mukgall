@@ -6,13 +6,14 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { LogIn, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { loginAction, AuthState } from "@/app/actions/auth";
+import { sanitizeRedirectPath } from "@/lib/urlSafety";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/";
+  const redirectTo = sanitizeRedirectPath(searchParams.get("redirectTo"), "/");
 
   const [showPassword, setShowPassword] = useState(false);
   const initialState: AuthState = { error: null };

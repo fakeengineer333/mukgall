@@ -57,6 +57,15 @@ export function ChatMessageList({
   const { markRoomAsRead } = useChat();
   const [messages, setMessages] = useState<(Message & { sender?: Profile | null })[]>(initialMessages);
   const [participants, setParticipants] = useState<ParticipantReadInfo[]>(initialParticipants);
+  const [prevInitialParticipants, setPrevInitialParticipants] = useState(initialParticipants);
+  if (initialParticipants !== prevInitialParticipants) {
+    setPrevInitialParticipants(initialParticipants);
+    setParticipants(initialParticipants);
+  }
+  const participantsRef = useRef<ParticipantReadInfo[]>(participants);
+  useEffect(() => {
+    participantsRef.current = participants;
+  }, [participants]);
   const [hasMore, setHasMore] = useState(initialMessages.length >= 30);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -72,11 +81,6 @@ export function ChatMessageList({
       ? initialMessages[initialMessages.length - 1].created_at
       : new Date().toISOString()
   );
-
-  // Sync initialParticipants if updated
-  useEffect(() => {
-    setParticipants(initialParticipants);
-  }, [initialParticipants]);
 
   // Auto scroll to bottom on new incoming messages
   const scrollToBottom = useCallback(() => {
@@ -334,7 +338,9 @@ export function ChatMessageList({
           const newMsg = payload.new as Message;
           if (!newMsg || !newMsg.id) return;
 
-          const cachedSender = participants.find((p) => p.user_id === newMsg.sender_id);
+          const cachedSender = participantsRef.current.find(
+            (p) => p.user_id === newMsg.sender_id
+          );
           if (cachedSender && cachedSender.username) {
             addMessageSafely({
               ...newMsg,
@@ -384,24 +390,28 @@ export function ChatMessageList({
         }
       )
       // 3. Realtime Typing Indicator Broadcast
-      .on("broadcast", { event: "typing" }, (payload: any) => {
-        const payloadData = payload?.payload;
-        if (payloadData?.userId && payloadData.userId !== currentUserId) {
-          setTypingUsers((prev) => ({
-            ...prev,
-            [payloadData.userId]: {
-              username: payloadData.username || "상대방",
-              expiresAt: Date.now() + 3000,
-            },
-          }));
+      .on(
+        "broadcast",
+        { event: "typing" },
+        (payload: { payload?: { userId?: string; username?: string } }) => {
+          const payloadData = payload?.payload;
+          if (payloadData?.userId && payloadData.userId !== currentUserId) {
+            setTypingUsers((prev) => ({
+              ...prev,
+              [payloadData.userId as string]: {
+                username: payloadData.username || "상대방",
+                expiresAt: Date.now() + 3000,
+              },
+            }));
+          }
         }
-      })
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomId, markRoomAsRead, participants, currentUserId]);
+  }, [roomId, markRoomAsRead, currentUserId]);
 
   // Quote Reply Trigger
   const handleQuoteReply = (targetMsg: Message & { sender?: Profile | null }) => {

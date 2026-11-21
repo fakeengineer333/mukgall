@@ -7,8 +7,17 @@ import { PwaRegister } from "@/components/common/PwaRegister";
 import { PwaInstallPrompt } from "@/components/common/PwaInstallPrompt";
 import { TopProgressBar } from "@/components/common/TopProgressBar";
 import { getAuthProfile } from "@/lib/auth";
-import { Profile } from "@/types";
 import { ChatProvider } from "@/providers/ChatProvider";
+
+function getSupabaseOrigin(): string | null {
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!rawUrl || rawUrl.includes("placeholder")) return null;
+  try {
+    return new URL(rawUrl).origin;
+  } catch {
+    return null;
+  }
+}
 
 export const metadata: Metadata = {
   title: {
@@ -48,12 +57,17 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const userProfile = await getAuthProfile();
+  const supabaseOrigin = getSupabaseOrigin();
 
   return (
     <html lang="ko" className="h-full antialiased font-sans" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://hlligntpburfectcfycc.supabase.co" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://hlligntpburfectcfycc.supabase.co" />
+        {supabaseOrigin && (
+          <>
+            <link rel="preconnect" href={supabaseOrigin} crossOrigin="anonymous" />
+            <link rel="dns-prefetch" href={supabaseOrigin} />
+          </>
+        )}
       </head>
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 selection:bg-blue-600 selection:text-white transition-colors" suppressHydrationWarning>
         <ChatProvider currentUserId={userProfile?.id}>

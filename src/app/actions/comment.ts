@@ -2,12 +2,12 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/ratelimit";
-import { Comment } from "@/types";
+import { hashClientFingerprint } from "@/lib/ssrfGuard";
 
 const commentSchema = z.object({
   content: z
@@ -117,47 +117,92 @@ export async function recommendCommentAction(
       return { success: false, error: "이미 추천한 댓글입니다." };
     }
 
+    const headersList = await headers();
+    const forwardedFor = headersList.get("x-forwarded-for");
+    const clientIp = forwardedFor
+      ? forwardedFor.split(",")[0].trim()
+      : headersList.get("x-real-ip") || "127.0.0.1";
+    const userAgent = headersList.get("user-agent") || "";
+    const ipHash = hashClientFingerprint(clientIp, userAgent);
+
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Rate limit: max 20 recommendations per minute
-    const rateKey = user ? `recommend_comment:${user.id}` : `recommend_comment:anon`;
+    // Rate limit: max 20 recommendations per minute per user or IP fingerprint
+    const rateKey = user
+      ? `recommend_comment:${user.id}`
+      : `recommend_comment:ip:${ipHash}`;
     const rateLimit = await checkRateLimit(rateKey, 20, 60);
     if (!rateLimit.success) {
       return { success: false, error: "추천 요청이 너무 빠릅니다. 잠시 후 다시 시도해주세요." };
     }
 
+    // Call increment_comment_like RPC if available
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rpcRes, error: rpcErr } = await (supabase as any).rpc(
+      "increment_comment_like",
+      {
+        p_comment_id: commentId,
+        p_ip_hash: ipHash,
+        p_user_id: user?.id || null,
+      }
+    );
+
+    if (!rpcErr && rpcRes) {
+      const parsed = typeof rpcRes === "string" ? JSON.parse(rpcRes) : rpcRes;
+      if (!parsed.success) {
+        return { success: false, error: parsed.error || "추천할 수 없습니다." };
+      }
+      cookieStore.set(cookieKey, "true", {
+        maxAge: 60 * 60 * 24 * 30,
+        path: "/",
+        httpOnly: true,
+      });
+      revalidatePath(`/posts/${postId}`);
+      return { success: true, newLikeCount: parsed.new_like_count };
+    }
+
+    if (rpcErr) {
+      if (rpcErr.code === "23505") {
+        return { success: false, error: "이미 추천한 댓글입니다." };
+      }
+      const msgLower = rpcErr.message?.toLowerCase() || "";
+      const isMissingRpc =
+        rpcErr.code === "42883" ||
+        rpcErr.code === "PGRST202" ||
+        msgLower.includes("could not find the function") ||
+        msgLower.includes("does not exist");
+      if (!isMissingRpc) {
+        return { success: false, error: rpcErr.message || "추천 처리 중 오류가 발생했습니다." };
+      }
+    }
+
     const adminClient = createAdminClient();
 
-    // Fetch current comment
+    // Fallback when increment_comment_like RPC is not yet deployed
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: comment, error: fetchErr } = await (adminClient.from("comments") as any)
-      .select("id, like_count")
+      .select("id, author_id, like_count, deleted_at")
       .eq("id", commentId)
       .maybeSingle();
 
-    if (fetchErr || !comment) {
+    if (fetchErr || !comment || comment.deleted_at) {
       return { success: false, error: "댓글을 찾을 수 없습니다." };
+    }
+
+    if (user && comment.author_id === user.id) {
+      return { success: false, error: "본인이 작성한 댓글은 추천할 수 없습니다." };
     }
 
     const currentLikes = comment.like_count || 0;
     const nextLikes = currentLikes + 1;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let { error: updateErr } = await (supabase.from("comments") as any)
+    const { error: updateErr } = await (adminClient.from("comments") as any)
       .update({ like_count: nextLikes })
       .eq("id", commentId);
-
-    if (updateErr) {
-      // Fallback to adminClient
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const retryRes = await (adminClient.from("comments") as any)
-        .update({ like_count: nextLikes })
-        .eq("id", commentId);
-      updateErr = retryRes.error;
-    }
 
     if (updateErr) {
       return { success: false, error: updateErr.message };
@@ -172,8 +217,10 @@ export async function recommendCommentAction(
 
     revalidatePath(`/posts/${postId}`);
     return { success: true, newLikeCount: nextLikes };
-  } catch (err: any) {
-    return { success: false, error: err.message || "추천 처리 중 오류가 발생했습니다." };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "추천 처리 중 오류가 발생했습니다.";
+    return { success: false, error: message };
   }
 }
 

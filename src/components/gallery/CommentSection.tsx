@@ -55,6 +55,11 @@ export function CommentSection({
   currentUserProfile,
 }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>(initialComments);
+  const [prevInitialComments, setPrevInitialComments] = useState<Comment[]>(initialComments);
+  if (initialComments !== prevInitialComments) {
+    setPrevInitialComments(initialComments);
+    setComments(initialComments);
+  }
   const [content, setContent] = useState("");
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,19 +73,19 @@ export function CommentSection({
 
   const DRAFT_KEY = `mukgall_draft_comment_${postId}`;
 
-  // Sync with props when server revalidates
+  // Load draft asynchronously from localStorage on mount
   useEffect(() => {
-    setComments(initialComments);
-  }, [initialComments]);
-
-  // Load draft from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedDraft = localStorage.getItem(DRAFT_KEY);
-      if (savedDraft) {
-        setContent(savedDraft);
+    const rafId = requestAnimationFrame(() => {
+      try {
+        const savedDraft = localStorage.getItem(DRAFT_KEY);
+        if (savedDraft) {
+          setContent(savedDraft);
+        }
+      } catch {
+        // Ignore storage read errors
       }
-    }
+    });
+    return () => cancelAnimationFrame(rafId);
   }, [DRAFT_KEY]);
 
   // Auto-save draft on change

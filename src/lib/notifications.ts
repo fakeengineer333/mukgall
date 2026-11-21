@@ -71,11 +71,8 @@ export async function sendChatNotification({
     const notification = new Notification(title, options);
     notification.onclick = () => {
       window.focus();
-      if (roomId) {
-        window.location.href = `/chat/${roomId}`;
-      } else {
-        window.location.href = "/chat";
-      }
+      const targetPath = roomId ? `/chat/${roomId}` : "/chat";
+      window.location.assign(new URL(targetPath, window.location.origin).toString());
       notification.close();
     };
   } catch (e) {

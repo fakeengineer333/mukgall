@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Bell, BellOff, Check } from "lucide-react";
+import { useState, useSyncExternalStore } from "react";
+import { Bell, Check } from "lucide-react";
 import {
   isNotificationSupported,
   isNotificationEnabled,
@@ -10,32 +10,37 @@ import {
 } from "@/lib/notifications";
 import { Button } from "@/components/ui/button";
 
-export function NotificationToggle() {
-  const [supported, setSupported] = useState(false);
-  const [enabled, setEnabled] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission>("default");
+const emptySubscribe = () => () => {};
 
-  useEffect(() => {
-    if (isNotificationSupported()) {
-      setSupported(true);
-      setPermission(Notification.permission);
-      setEnabled(isNotificationEnabled());
-    }
-  }, []);
+export function NotificationToggle() {
+  const supported = useSyncExternalStore(
+    emptySubscribe,
+    () => isNotificationSupported(),
+    () => false
+  );
+
+  const [overrideState, setOverrideState] = useState<{
+    permission?: NotificationPermission;
+    enabled?: boolean;
+  }>({});
 
   if (!supported) return null;
+
+  const permission =
+    overrideState.permission ??
+    (typeof Notification !== "undefined" ? Notification.permission : "default");
+  const enabled = overrideState.enabled ?? isNotificationEnabled();
 
   const handleToggle = async () => {
     if (permission !== "granted") {
       const granted = await requestNotificationPermission();
       if (granted) {
-        setPermission("granted");
-        setEnabled(true);
+        setOverrideState({ permission: "granted", enabled: true });
       }
     } else {
       const next = !enabled;
       setNotificationEnabled(next);
-      setEnabled(next);
+      setOverrideState((prev) => ({ ...prev, enabled: next }));
     }
   };
 

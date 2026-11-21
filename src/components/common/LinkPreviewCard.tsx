@@ -100,6 +100,8 @@ export function LinkPreviewCard({
             compact ? "h-28 sm:h-32" : "h-36 sm:h-44"
           }`}
         >
+          {/* External OpenGraph thumbnail domains are arbitrary and cannot be statically listed in next.config */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={preview.image}
             alt={preview.title || "Preview"}
@@ -121,6 +123,8 @@ export function LinkPreviewCard({
           }`}
         >
           {preview.favicon ? (
+            /* External favicon hosts are arbitrary */
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={preview.favicon}
               alt=""

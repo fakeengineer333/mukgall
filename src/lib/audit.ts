@@ -31,7 +31,6 @@ export async function recordAuditLog({
 
     const supabaseAdmin = createAdminClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabaseAdmin.from("audit_logs").insert({
       actor_id: actorId,
       action,
@@ -40,7 +39,7 @@ export async function recordAuditLog({
       ip_address: ipAddress,
       user_agent: userAgent,
       metadata: metadata as Json,
-    } as any);
+    } as never);
 
     if (error) {
       console.error("[AuditLog Error] Failed to write audit log:", error);

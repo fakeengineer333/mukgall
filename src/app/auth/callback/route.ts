@@ -1,13 +1,31 @@
 import { type NextRequest, NextResponse } from "next/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { recordAuditLog } from "@/lib/audit";
+import { sanitizeRedirectPath } from "@/lib/urlSafety";
+
+const VALID_EMAIL_OTP_TYPES = new Set<EmailOtpType>([
+  "signup",
+  "invite",
+  "magiclink",
+  "recovery",
+  "email_change",
+  "email",
+]);
+
+function parseEmailOtpType(raw: string | null): EmailOtpType | null {
+  if (!raw) return null;
+  return VALID_EMAIL_OTP_TYPES.has(raw as EmailOtpType)
+    ? (raw as EmailOtpType)
+    : null;
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const token_hash = searchParams.get("token_hash");
-  const type = searchParams.get("type");
-  const next = searchParams.get("next") ?? "/";
+  const type = parseEmailOtpType(searchParams.get("type"));
+  const next = sanitizeRedirectPath(searchParams.get("next"), "/");
 
   const supabase = await createClient();
 
@@ -27,7 +45,7 @@ export async function GET(request: NextRequest) {
 
   if (token_hash && type) {
     const { data, error } = await supabase.auth.verifyOtp({
-      type: type as any,
+      type,
       token_hash,
     });
     if (!error && data.user) {

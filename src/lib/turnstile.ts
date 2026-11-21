@@ -12,13 +12,18 @@ export async function verifyTurnstileToken(
   remoteIp?: string
 ): Promise<boolean> {
   const secretKey = process.env.TURNSTILE_SECRET_KEY;
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
-  // In development without Turnstile configured, bypass verification
   if (!secretKey) {
-    if (process.env.NODE_ENV === "development") {
-      return true;
+    if (process.env.NODE_ENV === "production" && siteKey) {
+      console.error(
+        "[Turnstile] TURNSTILE_SECRET_KEY is missing in production while NEXT_PUBLIC_TURNSTILE_SITE_KEY is configured."
+      );
+      return false;
     }
-    console.warn("[Turnstile] TURNSTILE_SECRET_KEY is not configured.");
+    if (process.env.NODE_ENV !== "development") {
+      console.warn("[Turnstile] TURNSTILE_SECRET_KEY is not configured.");
+    }
     return true;
   }
 

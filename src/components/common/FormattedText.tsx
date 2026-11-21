@@ -29,6 +29,23 @@ function toValidHref(rawUrl: string): string {
   return `https://${rawUrl}`;
 }
 
+function parseQuoteReply(content: string): {
+  quoteInfo: { author: string; text: string } | null;
+  cleanContent: string;
+} {
+  const quoteMatch = content.match(/^>\s*\[답장:\s*([^\]]+)\]\s*([^\n]+)\n?([\s\S]*)$/);
+  if (quoteMatch) {
+    return {
+      quoteInfo: {
+        author: quoteMatch[1].trim(),
+        text: quoteMatch[2].trim(),
+      },
+      cleanContent: quoteMatch[3].trim(),
+    };
+  }
+  return { quoteInfo: null, cleanContent: content };
+}
+
 export function FormattedText({
   content,
   showPreview = true,
@@ -37,19 +54,7 @@ export function FormattedText({
   className = "",
 }: FormattedTextProps) {
   // Check for quote reply pattern: "> [답장: {author}] {quoteText}\n{actualBody}"
-  const { quoteInfo, cleanContent } = useMemo(() => {
-    const quoteMatch = content.match(/^>\s*\[답장:\s*([^\]]+)\]\s*([^\n]+)\n?([\s\S]*)$/);
-    if (quoteMatch) {
-      return {
-        quoteInfo: {
-          author: quoteMatch[1].trim(),
-          text: quoteMatch[2].trim(),
-        },
-        cleanContent: quoteMatch[3].trim(),
-      };
-    }
-    return { quoteInfo: null, cleanContent: content };
-  }, [content]);
+  const { quoteInfo, cleanContent } = parseQuoteReply(content);
 
   // Extract unique URLs for previews
   const urls = useMemo(() => {

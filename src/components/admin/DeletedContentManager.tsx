@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Trash2, RotateCcw, ImageIcon, MessageSquare, AlertCircle } from "lucide-react";
+import { RotateCcw, ImageIcon, MessageSquare } from "lucide-react";
 import { Post, Comment } from "@/types";
 import { restorePostAction } from "@/app/actions/post";
 import { restoreCommentAction } from "@/app/actions/comment";

@@ -5,9 +5,17 @@ import { useRouter } from "next/navigation";
 import { ImageIcon, AlertCircle, Loader2, Send } from "lucide-react";
 import { createPostAction, PostFormState } from "@/app/actions/post";
 import { ImageUploader } from "@/components/gallery/ImageUploader";
+import { TurnstileWidget } from "@/components/common/TurnstileWidget";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const DRAFT_KEY_TITLE = "mukgall_draft_post_title";
 const DRAFT_KEY_CONTENT = "mukgall_draft_post_content";
@@ -22,46 +30,73 @@ export function PostCreateForm({ isAdmin = false }: PostCreateFormProps) {
   const [content, setContent] = useState("");
   const [isNotice, setIsNotice] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [turnstileToken, setTurnstileToken] = useState("");
   const initialState: PostFormState = { error: null };
-  const [state, formAction, isPending] = useActionState(createPostAction, initialState);
+  const [state, formAction, isPending] = useActionState(
+    createPostAction,
+    initialState
+  );
 
-  // Restore draft on mount
+  // Restore draft asynchronously on mount
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedTitle = localStorage.getItem(DRAFT_KEY_TITLE);
-      const savedContent = localStorage.getItem(DRAFT_KEY_CONTENT);
-      if (savedTitle) setTitle(savedTitle);
-      if (savedContent) setContent(savedContent);
-    }
+    const rafId = requestAnimationFrame(() => {
+      try {
+        const savedTitle = localStorage.getItem(DRAFT_KEY_TITLE);
+        const savedContent = localStorage.getItem(DRAFT_KEY_CONTENT);
+        if (savedTitle) setTitle(savedTitle);
+        if (savedContent) setContent(savedContent);
+      } catch {
+        // Ignore storage read errors
+      }
+    });
+    return () => cancelAnimationFrame(rafId);
   }, []);
+
+  // Re-save draft if server submission fails
+  useEffect(() => {
+    if (state?.error) {
+      try {
+        if (title.trim()) localStorage.setItem(DRAFT_KEY_TITLE, title);
+        if (content.trim()) localStorage.setItem(DRAFT_KEY_CONTENT, content);
+      } catch {
+        // Ignore storage write errors
+      }
+    }
+  }, [state?.error, title, content]);
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
-    if (typeof window !== "undefined") {
+    try {
       if (val.trim()) {
         localStorage.setItem(DRAFT_KEY_TITLE, val);
       } else {
         localStorage.removeItem(DRAFT_KEY_TITLE);
       }
+    } catch {
+      // Ignore storage write errors
     }
   };
 
   const handleContentChange = (val: string) => {
     setContent(val);
-    if (typeof window !== "undefined") {
+    try {
       if (val.trim()) {
         localStorage.setItem(DRAFT_KEY_CONTENT, val);
       } else {
         localStorage.removeItem(DRAFT_KEY_CONTENT);
       }
+    } catch {
+      // Ignore storage write errors
     }
   };
 
-  // Clear drafts on successful submit
+  // Clear drafts on submit; re-persisted automatically if action returns error
   const handleSubmit = () => {
-    if (typeof window !== "undefined") {
+    try {
       localStorage.removeItem(DRAFT_KEY_TITLE);
       localStorage.removeItem(DRAFT_KEY_CONTENT);
+    } catch {
+      // Ignore storage remove errors
     }
   };
 
@@ -86,8 +121,9 @@ export function PostCreateForm({ isAdmin = false }: PostCreateFormProps) {
             </div>
           )}
 
-          {/* Hidden image URLs json string */}
+          {/* Hidden image URLs json string & Turnstile token */}
           <input type="hidden" name="image_urls" value={JSON.stringify(imageUrls)} />
+          <input type="hidden" name="turnstile_token" value={turnstileToken} />
 
           {/* Admin Notice Toggle */}
           {isAdmin && (
@@ -95,7 +131,10 @@ export function PostCreateForm({ isAdmin = false }: PostCreateFormProps) {
               <div className="flex items-center gap-2">
                 <span className="text-sm">📢</span>
                 <div>
-                  <label htmlFor="is_notice" className="text-xs font-bold text-amber-700 dark:text-amber-300 block cursor-pointer">
+                  <label
+                    htmlFor="is_notice"
+                    className="text-xs font-bold text-amber-700 dark:text-amber-300 block cursor-pointer"
+                  >
                     공지글로 등록
                   </label>
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -118,7 +157,10 @@ export function PostCreateForm({ isAdmin = false }: PostCreateFormProps) {
 
           {/* Title */}
           <div className="space-y-1.5">
-            <label htmlFor="title" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            <label
+              htmlFor="title"
+              className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+            >
               제목
             </label>
             <Input
@@ -142,7 +184,10 @@ export function PostCreateForm({ isAdmin = false }: PostCreateFormProps) {
 
           {/* Content */}
           <div className="space-y-1.5">
-            <label htmlFor="content" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            <label
+              htmlFor="content"
+              className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+            >
               본문 내용
             </label>
             <textarea
@@ -157,6 +202,8 @@ export function PostCreateForm({ isAdmin = false }: PostCreateFormProps) {
               className="flex w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3.5 py-2.5 text-sm ring-offset-background placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 text-zinc-900 dark:text-zinc-100 resize-none transition-colors"
             />
           </div>
+
+          <TurnstileWidget onToken={setTurnstileToken} />
         </CardContent>
 
         <CardFooter className="flex justify-between items-center pt-2 border-t border-zinc-200 dark:border-zinc-800/80">

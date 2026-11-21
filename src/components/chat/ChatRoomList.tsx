@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Users, ArrowRight, MessageCircleOff } from "lucide-react";
-import { ChatRoom, Profile, Message } from "@/types";
+import { Users, ArrowRight, MessageCircleOff } from "lucide-react";
+import { ChatRoom, Profile } from "@/types";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
@@ -39,28 +39,35 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
   const router = useRouter();
   const { unreadRoomsMap, latestMessage } = useChat();
   const [rooms, setRooms] = useState<ChatRoomItem[]>(() => sortRoomsByRecent(initialRooms));
+  const [prevInitialRooms, setPrevInitialRooms] = useState(initialRooms);
+  const [prevLatestMessage, setPrevLatestMessage] = useState(latestMessage);
 
   // Sync state if initialRooms updates from server
-  useEffect(() => {
+  if (initialRooms !== prevInitialRooms) {
+    setPrevInitialRooms(initialRooms);
     setRooms(sortRoomsByRecent(initialRooms));
-  }, [initialRooms]);
+  }
 
   // React immediately to new messages from global ChatProvider
-  useEffect(() => {
-    if (!latestMessage || !latestMessage.room_id) return;
-
-    setRooms((prevRooms) => {
-      const roomIndex = prevRooms.findIndex((r) => r.id === latestMessage.room_id);
+  if (latestMessage !== prevLatestMessage) {
+    setPrevLatestMessage(latestMessage);
+    if (latestMessage?.room_id) {
+      const roomIndex = rooms.findIndex((r) => r.id === latestMessage.room_id);
       if (roomIndex !== -1) {
-        const targetRoom = { ...prevRooms[roomIndex], last_message: latestMessage };
-        const otherRooms = prevRooms.filter((_, idx) => idx !== roomIndex);
-        return sortRoomsByRecent([targetRoom, ...otherRooms]);
+        const targetRoom = { ...rooms[roomIndex], last_message: latestMessage };
+        const otherRooms = rooms.filter((_, idx) => idx !== roomIndex);
+        setRooms(sortRoomsByRecent([targetRoom, ...otherRooms]));
       }
-      // If room is not in current list (new room created), refresh server
+    }
+  }
+
+  // Refresh server list when a new message arrives for a room not yet in local list
+  useEffect(() => {
+    if (!latestMessage?.room_id) return;
+    if (!rooms.some((r) => r.id === latestMessage.room_id)) {
       router.refresh();
-      return prevRooms;
-    });
-  }, [latestMessage, router]);
+    }
+  }, [latestMessage, rooms, router]);
 
   // Catch-up refresh on window focus, popstate, or visibility change
   useEffect(() => {

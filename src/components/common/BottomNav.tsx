@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Image as ImageIcon, MessageSquare, PlusCircle, User, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/types";
@@ -13,40 +13,40 @@ interface BottomNavProps {
   currentUserId?: string | null;
 }
 
+const emptySubscribe = () => () => {};
+
 export function BottomNav({ userRole }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { unreadCount } = useChat();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
   const isHome = pathname === "/";
-  const [currentTab, setCurrentTab] = useState<string>("gallery");
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Sync tab with URL searchParams & PopState on client
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.location.pathname === "/") {
-      const params = new URLSearchParams(window.location.search);
-      const view = params.get("view") || "gallery";
-      setCurrentTab(view);
-    }
-  }, [pathname]);
+  const routeKey = `${pathname}?${searchParams.toString()}`;
+  const urlTab = isHome ? searchParams.get("view") || "gallery" : "gallery";
+  const [tabOverride, setTabOverride] = useState<{ routeKey: string; view: string } | null>(null);
+  const currentTab =
+    tabOverride && tabOverride.routeKey === routeKey ? tabOverride.view : urlTab;
 
   useEffect(() => {
     const handlePopState = () => {
       if (window.location.pathname === "/") {
         const params = new URLSearchParams(window.location.search);
-        setCurrentTab(params.get("view") || "gallery");
+        const key = `${window.location.pathname}?${params.toString()}`;
+        setTabOverride({ routeKey: key, view: params.get("view") || "gallery" });
       }
     };
 
     const handleSwitch = (e: Event) => {
       const customEvt = e as CustomEvent<string>;
       if (customEvt.detail) {
-        setCurrentTab(customEvt.detail);
+        const key = `${window.location.pathname}?${new URLSearchParams(window.location.search).toString()}`;
+        setTabOverride({ routeKey: key, view: customEvt.detail });
       }
     };
 
@@ -70,9 +70,10 @@ export function BottomNav({ userRole }: BottomNavProps) {
   ) => {
     if (isHome) {
       e.preventDefault();
-      setCurrentTab(tabKey);
       const newUrl = tabKey === "gallery" ? "/" : `/?view=${tabKey}`;
       window.history.pushState(null, "", newUrl);
+      const nextKey = `${window.location.pathname}?${new URLSearchParams(window.location.search).toString()}`;
+      setTabOverride({ routeKey: nextKey, view: tabKey });
       window.dispatchEvent(
         new CustomEvent("app:switch-tab", { detail: tabKey })
       );

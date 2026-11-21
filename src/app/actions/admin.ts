@@ -2,7 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient, isServiceRoleConfigured } from "@/lib/supabase/admin";
-import { AuditLog, Post, Comment, Profile } from "@/types";
+import { sanitizePostgrestFilterValue } from "@/lib/urlSafety";
+import { AuditLog, Post, Comment } from "@/types";
 
 export interface AdminStatsData {
   totalUsers: number;
@@ -100,9 +101,10 @@ export async function fetchAuditLogsAction({
     query = query.eq("action", action);
   }
 
-  if (search && search.trim()) {
+  const sanitizedSearch = search ? sanitizePostgrestFilterValue(search) : "";
+  if (sanitizedSearch) {
     query = query.or(
-      `ip_address.ilike.%${search.trim()}%,target_id.ilike.%${search.trim()}%,target_type.ilike.%${search.trim()}%`
+      `ip_address.ilike.%${sanitizedSearch}%,target_id.ilike.%${sanitizedSearch}%,target_type.ilike.%${sanitizedSearch}%`
     );
   }
 

@@ -103,22 +103,31 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
     notFound();
   }
 
-  const rawParticipants = rawParticipantsRes.data || [];
-  const participants = rawParticipants.map((p: any) => ({
-    ...p.profile,
+  interface RawChatParticipantRow {
+    user_id: string;
+    last_read_at: string;
+    joined_at: string;
+    profile: Profile | null;
+  }
+
+  const rawParticipants = (rawParticipantsRes.data || []) as RawChatParticipantRow[];
+  const participants = rawParticipants.map((p) => ({
+    ...(p.profile as Profile),
     id: p.user_id,
     user_id: p.user_id,
     last_read_at: p.last_read_at,
     joined_at: p.joined_at,
   })) as (Profile & { joined_at?: string })[];
 
-  const initialParticipants = rawParticipants.map((p: any) => ({
-    user_id: p.user_id as string,
-    last_read_at: (p.last_read_at || p.joined_at || "1970-01-01T00:00:00Z") as string,
+  const initialParticipants = rawParticipants.map((p) => ({
+    user_id: p.user_id,
+    last_read_at: p.last_read_at || p.joined_at || "1970-01-01T00:00:00Z",
   }));
 
-  const rawMessages = (rawMessagesRes.data || []).filter((m: any) =>
-    !myParticipation.joined_at || new Date(m.created_at) >= new Date(myParticipation.joined_at)
+  const rawMessages = ((rawMessagesRes.data || []) as (Message & { sender?: Profile | null })[]).filter(
+    (m) =>
+      !myParticipation.joined_at ||
+      new Date(m.created_at) >= new Date(myParticipation.joined_at)
   );
 
   const initialMessages = ((rawMessages || []) as unknown as (Message & { sender?: Profile | null })[]).reverse();

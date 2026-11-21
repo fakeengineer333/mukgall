@@ -31,7 +31,7 @@ export function ChatMessageInput({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [quoteReply, setQuoteReply] = useState<QuoteTarget | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const isTypingRef = useRef(false);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -67,7 +67,7 @@ export function ChatMessageInput({
           username: currentUserProfile?.username || "상대방",
         },
       });
-    } catch (e) {
+    } catch {
       // Non-critical
     }
   }, [roomId, currentUserId, currentUserProfile]);
@@ -166,12 +166,12 @@ export function ChatMessageInput({
 
     // Background server action
     startTransition(async () => {
-      const res = (await sendMessageAction({
+      const res = await sendMessageAction({
         roomId,
         content: textToSend || (imageToSend ? "" : undefined),
         imageUrl: imageToSend,
         messageType: msgType,
-      })) as any;
+      });
 
       if (!res?.success) {
         window.dispatchEvent(
@@ -191,7 +191,7 @@ export function ChatMessageInput({
           <div className="flex items-center gap-1.5 truncate">
             <CornerDownRight className="h-3.5 w-3.5 shrink-0" />
             <span className="font-bold shrink-0">{quoteReply.senderName}님에게 답장:</span>
-            <span className="truncate text-zinc-600 dark:text-zinc-400">"{quoteReply.textPreview}"</span>
+            <span className="truncate text-zinc-600 dark:text-zinc-400">&quot;{quoteReply.textPreview}&quot;</span>
           </div>
           <button
             type="button"

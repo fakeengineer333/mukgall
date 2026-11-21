@@ -1,12 +1,13 @@
 {
   "name": "mukgall",
-  "version": "0.7.3",
+  "version": "0.8.0",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

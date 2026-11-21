@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition } from "react";
+import { useState, useRef, useEffect, useTransition, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { FileText, MessageSquare, Loader2, Sparkles } from "lucide-react";
@@ -19,6 +19,8 @@ interface UserActionMenuProps {
   className?: string;
 }
 
+const emptySubscribe = () => () => {};
+
 export function UserActionMenu({
   userId,
   username,
@@ -30,16 +32,16 @@ export function UserActionMenu({
   className = "",
 }: UserActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
   const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [isPending, startTransition] = useTransition();
   const triggerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const isSelf = Boolean(currentUserId && userId && currentUserId === userId);
   const displayName = username || "익명";

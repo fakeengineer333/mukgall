@@ -105,6 +105,29 @@ export interface Database {
           viewed_date?: string;
         };
       };
+      post_likes: {
+        Row: {
+          id: number;
+          post_id: number;
+          user_id: string | null;
+          ip_hash: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          post_id: number;
+          user_id?: string | null;
+          ip_hash: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          post_id?: number;
+          user_id?: string | null;
+          ip_hash?: string;
+          created_at?: string;
+        };
+      };
       comments: {
         Row: {
           id: number;
@@ -138,6 +161,29 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
+        };
+      };
+      comment_likes: {
+        Row: {
+          id: number;
+          comment_id: number;
+          user_id: string | null;
+          ip_hash: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          comment_id: number;
+          user_id?: string | null;
+          ip_hash: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          comment_id?: number;
+          user_id?: string | null;
+          ip_hash?: string;
+          created_at?: string;
         };
       };
       chat_rooms: {
@@ -262,6 +308,52 @@ export interface Database {
           p_ip_hash: string;
         };
         Returns: boolean;
+      };
+      increment_post_like: {
+        Args: {
+          p_post_id: number;
+          p_ip_hash: string;
+          p_user_id?: string | null;
+        };
+        Returns: Json;
+      };
+      increment_comment_like: {
+        Args: {
+          p_comment_id: number;
+          p_ip_hash: string;
+          p_user_id?: string | null;
+        };
+        Returns: Json;
+      };
+      check_email_exists: {
+        Args: {
+          p_email: string;
+        };
+        Returns: boolean;
+      };
+      create_chat_room: {
+        Args: {
+          p_is_group: boolean;
+          p_name: string | null;
+          p_participant_ids: string[];
+        };
+        Returns: Json;
+      };
+      update_chat_room: {
+        Args: {
+          p_room_id: string;
+          p_name: string;
+          p_avatar_url: string | null;
+        };
+        Returns: Json;
+      };
+      get_user_chat_rooms_summary: {
+        Args: Record<string, never>;
+        Returns: {
+          room_id: string;
+          last_message: Json | null;
+          unread_count: number;
+        }[];
       };
       is_admin: {
         Args: {

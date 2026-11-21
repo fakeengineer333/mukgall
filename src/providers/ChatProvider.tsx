@@ -27,10 +27,32 @@ export function ChatProvider({
   currentUserId?: string | null;
 }) {
   const pathname = usePathname();
-  const [currentUserId, setCurrentUserId] = useState<string | null>(initialUserId || null);
+  const [clientUserId, setClientUserId] = useState<string | null>(null);
+  const currentUserId = initialUserId ?? clientUserId;
+
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadRoomsMap, setUnreadRoomsMap] = useState<Record<string, number>>({});
-  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+
+  const pathnameRoomId = pathname.startsWith("/chat/")
+    ? pathname.split("/chat/")[1]?.split("/")[0] || null
+    : null;
+  const [activeRoomOverride, setActiveRoomOverride] = useState<{
+    pathname: string;
+    roomId: string | null;
+  } | null>(null);
+
+  const activeRoomId =
+    activeRoomOverride && activeRoomOverride.pathname === pathname
+      ? activeRoomOverride.roomId
+      : pathnameRoomId;
+
+  const setActiveRoomId = useCallback(
+    (roomId: string | null) => {
+      setActiveRoomOverride({ pathname, roomId });
+    },
+    [pathname]
+  );
+
   const [latestMessage, setLatestMessage] = useState<Message | null>(null);
 
   const activeRoomIdRef = useRef<string | null>(null);
@@ -38,37 +60,17 @@ export function ChatProvider({
     activeRoomIdRef.current = activeRoomId;
   }, [activeRoomId]);
 
-  // Sync initialUserId
-  useEffect(() => {
-    if (initialUserId && initialUserId !== currentUserId) {
-      setCurrentUserId(initialUserId);
-    }
-  }, [initialUserId, currentUserId]);
-
-  // Fallback: resolve user ID if not provided
+  // Fallback: resolve user ID if not provided from server
   useEffect(() => {
     if (!currentUserId) {
       const supabase = createClient();
       supabase.auth.getUser().then(({ data }) => {
         if (data?.user?.id) {
-          setCurrentUserId(data.user.id);
+          setClientUserId(data.user.id);
         }
       });
     }
   }, [currentUserId]);
-
-  // Auto detect activeRoomId from pathname
-  useEffect(() => {
-    if (pathname.startsWith("/chat/")) {
-      const parts = pathname.split("/chat/");
-      if (parts[1]) {
-        const roomId = parts[1].split("/")[0];
-        setActiveRoomId(roomId);
-      }
-    } else {
-      setActiveRoomId(null);
-    }
-  }, [pathname]);
 
   // Query database for all unread counts per room (in parallel)
   const refreshUnread = useCallback(async () => {
@@ -83,7 +85,12 @@ export function ChatProvider({
         .eq("user_id", currentUserId)
         .is("left_at", null);
 
-      if (!participations || participations.length === 0) {
+      const typedParticipations = (participations || []) as {
+        room_id: string;
+        last_read_at: string | null;
+      }[];
+
+      if (typedParticipations.length === 0) {
         setUnreadCount(0);
         setUnreadRoomsMap({});
         return;
@@ -91,7 +98,7 @@ export function ChatProvider({
 
       // Parallelize unread count queries across all rooms
       const results = await Promise.all(
-        participations.map(async (part: any) => {
+        typedParticipations.map(async (part) => {
           const rId = part.room_id;
           const lastRead = part.last_read_at || "1970-01-01T00:00:00Z";
 
@@ -121,37 +128,36 @@ export function ChatProvider({
   }, [currentUserId]);
 
   // Instant mark as read in memory and sync with server
-  const markRoomAsRead = useCallback(
-    (roomId: string) => {
-      setUnreadRoomsMap((prev) => {
-        const roomUnread = prev[roomId] || 0;
-        if (roomUnread === 0) return prev;
+  const markRoomAsRead = useCallback((roomId: string) => {
+    setUnreadRoomsMap((prev) => {
+      const roomUnread = prev[roomId] || 0;
+      if (roomUnread === 0) return prev;
 
-        setUnreadCount((c) => Math.max(0, c - roomUnread));
-        return {
-          ...prev,
-          [roomId]: 0,
-        };
-      });
+      setUnreadCount((c) => Math.max(0, c - roomUnread));
+      return {
+        ...prev,
+        [roomId]: 0,
+      };
+    });
 
-      // Update in database in background
-      updateLastReadAction(roomId);
-    },
-    []
-  );
+    // Update in database in background
+    updateLastReadAction(roomId);
+  }, []);
 
-  // Initial unread fetch
+  // Initial unread fetch scheduled asynchronously
   useEffect(() => {
-    if (currentUserId) {
-      refreshUnread();
-    }
+    if (!currentUserId) return;
+    const timer = setTimeout(() => {
+      void refreshUnread();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [currentUserId, refreshUnread]);
 
   // Re-fetch on focus / popstate / visibilitychange
   useEffect(() => {
     const handleSync = () => {
       if (document.visibilityState === "visible") {
-        refreshUnread();
+        void refreshUnread();
       }
     };
 
@@ -177,7 +183,9 @@ export function ChatProvider({
 
     async function setupRealtime() {
       // Authenticate Realtime socket before subscribing
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (isCancelled) return;
 
       if (session?.access_token) {
@@ -201,7 +209,7 @@ export function ChatProvider({
           // User is NOT in this room -> increment unread count & map
           setUnreadRoomsMap((prev) => ({
             ...prev,
-            [newMsg.room_id!]: (prev[newMsg.room_id!] || 0) + 1,
+            [newMsg.room_id]: (prev[newMsg.room_id] || 0) + 1,
           }));
           setUnreadCount((prev) => prev + 1);
 
@@ -209,14 +217,18 @@ export function ChatProvider({
           let senderName = "새 메시지";
           let senderAvatar: string | undefined = undefined;
           if (newMsg.sender_id) {
-            const { data: senderProf } = await supabase
+            const { data: rawSenderProf } = await supabase
               .from("profiles")
               .select("username, avatar_url")
               .eq("id", newMsg.sender_id)
               .maybeSingle();
-            if (senderProf && (senderProf as any).username) {
-              senderName = (senderProf as any).username;
-              senderAvatar = (senderProf as any).avatar_url || undefined;
+            const senderProf = rawSenderProf as {
+              username?: string | null;
+              avatar_url?: string | null;
+            } | null;
+            if (senderProf?.username) {
+              senderName = senderProf.username;
+              senderAvatar = senderProf.avatar_url || undefined;
             }
           }
 
@@ -244,7 +256,7 @@ export function ChatProvider({
           (payload) => {
             const newMsg = payload.new as Message;
             if (newMsg) {
-              handleIncomingMessage(newMsg);
+              void handleIncomingMessage(newMsg);
             }
           }
         )
@@ -257,13 +269,13 @@ export function ChatProvider({
             filter: `user_id=eq.${currentUserId}`,
           },
           () => {
-            refreshUnread();
+            void refreshUnread();
           }
         )
         .subscribe();
     }
 
-    setupRealtime();
+    void setupRealtime();
 
     return () => {
       isCancelled = true;
@@ -275,7 +287,11 @@ export function ChatProvider({
 
   // Request browser notification permission politely on first interaction
   useEffect(() => {
-    if (currentUserId && isNotificationSupported() && Notification.permission === "default") {
+    if (
+      currentUserId &&
+      isNotificationSupported() &&
+      Notification.permission === "default"
+    ) {
       const handleFirstClick = () => {
         Notification.requestPermission();
         window.removeEventListener("click", handleFirstClick);
