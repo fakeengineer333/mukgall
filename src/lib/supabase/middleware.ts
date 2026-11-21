@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { hasSupabaseAuthCookie } from "@/lib/urlSafety";
 import { Database } from "@/types/database";
 
 export async function updateSession(request: NextRequest) {
@@ -7,8 +8,27 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
+  const url = request.nextUrl.clone();
+  const isAdminRoute = url.pathname.startsWith("/admin");
+  const isProtectedUserRoute =
+    url.pathname.startsWith("/mypage") ||
+    url.pathname.startsWith("/posts/create") ||
+    url.pathname.startsWith("/chat");
+
+  // Fast-path for anonymous visitors: avoid Supabase Auth roundtrip when no auth cookie exists
+  if (!hasSupabaseAuthCookie(request.cookies.getAll())) {
+    if (isAdminRoute || isProtectedUserRoute) {
+      url.pathname = "/login";
+      url.searchParams.set("redirectTo", request.nextUrl.pathname);
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
 
   const supabase = createServerClient<Database>(
     supabaseUrl,
@@ -18,8 +38,16 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        setAll(
+          cookiesToSet: {
+            name: string;
+            value: string;
+            options?: CookieOptions;
+          }[]
+        ) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
           supabaseResponse = NextResponse.next({
             request,
           });
@@ -31,15 +59,16 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const url = request.nextUrl.clone();
+  const { data: claimsData, error: claimsError } =
+    await supabase.auth.getClaims();
+  const userId =
+    !claimsError && typeof claimsData?.claims?.sub === "string"
+      ? claimsData.claims.sub
+      : null;
 
   // Admin route protection: check if role === 'ADMIN'
-  if (url.pathname.startsWith("/admin")) {
-    if (!user) {
+  if (isAdminRoute) {
+    if (!userId) {
       url.pathname = "/login";
       url.searchParams.set("redirectTo", request.nextUrl.pathname);
       return NextResponse.redirect(url);
@@ -48,7 +77,7 @@ export async function updateSession(request: NextRequest) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single();
 
     const role = (profile as { role?: string } | null)?.role;
@@ -59,12 +88,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Protected user routes
-  if (
-    (url.pathname.startsWith("/mypage") ||
-      url.pathname.startsWith("/posts/create") ||
-      url.pathname.startsWith("/chat")) &&
-    !user
-  ) {
+  if (isProtectedUserRoute && !userId) {
     url.pathname = "/login";
     url.searchParams.set("redirectTo", request.nextUrl.pathname);
     return NextResponse.redirect(url);

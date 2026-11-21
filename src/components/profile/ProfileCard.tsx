@@ -47,7 +47,7 @@ export function ProfileCard({
           {/* User info */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-black text-zinc-900 dark:text-white">{profile.username}</h2>
+              <h2 className="text-xl font-black text-zinc-900 dark:text-white [overflow-wrap:anywhere]">{profile.username}</h2>
               {isAdmin && (
                 <Badge variant="admin" className="flex items-center gap-1 font-bold">
                   <Shield className="h-3 w-3" />
@@ -56,7 +56,7 @@ export function ProfileCard({
               )}
             </div>
 
-            <p className="text-sm text-zinc-700 dark:text-zinc-300">
+            <p className="text-sm text-zinc-700 dark:text-zinc-300 [overflow-wrap:anywhere]">
               {profile.bio || "등록된 한 줄 소개가 없습니다."}
             </p>
 

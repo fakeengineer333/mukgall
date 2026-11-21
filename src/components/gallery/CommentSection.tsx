@@ -320,7 +320,7 @@ export function CommentSection({
           {/* Active Reply Banner */}
           {replyTo && (
             <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-600 dark:text-blue-400 animate-in fade-in slide-in-from-top-1 duration-150">
-              <div className="flex items-center gap-1.5 font-semibold truncate">
+              <div className="flex items-center gap-1.5 min-w-0 font-semibold truncate">
                 <CornerDownRight className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">@{replyTo.authorName}님에게 답글 작성 중</span>
               </div>
@@ -478,7 +478,7 @@ export function CommentSection({
                 </div>
 
                 {best.content && (
-                  <p className="text-xs text-zinc-800 dark:text-zinc-200 font-medium leading-relaxed pl-7">
+                  <p className="text-xs text-zinc-800 dark:text-zinc-200 font-medium leading-relaxed pl-7 whitespace-pre-wrap [overflow-wrap:anywhere]">
                     {best.content}
                   </p>
                 )}
@@ -643,7 +643,7 @@ export function CommentSection({
                 {/* Comment Content */}
                 {comment.content && (
                   <div
-                    className={`text-xs sm:text-sm text-zinc-800 dark:text-zinc-300 leading-relaxed ${
+                    className={`min-w-0 text-xs sm:text-sm text-zinc-800 dark:text-zinc-300 leading-relaxed ${
                       isReply ? "pl-5" : "pl-8"
                     }`}
                   >

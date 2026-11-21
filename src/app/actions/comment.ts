@@ -1,13 +1,14 @@
 "use server";
 
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { hashClientFingerprint } from "@/lib/ssrfGuard";
+import { POSTS_LIST_TAG } from "@/lib/publicQueries";
 
 const commentSchema = z.object({
   content: z
@@ -89,6 +90,7 @@ export async function createCommentAction(
       metadata: { postId, contentPreview: content.slice(0, 50), hasImage: Boolean(imageUrl) },
     });
 
+    updateTag(POSTS_LIST_TAG);
     revalidatePath(`/posts/${postId}`);
     return { success: true, error: null };
   }
@@ -101,6 +103,7 @@ export async function createCommentAction(
     metadata: { postId, contentPreview: content.slice(0, 50), hasImage: Boolean(imageUrl) },
   });
 
+  updateTag(POSTS_LIST_TAG);
   revalidatePath(`/posts/${postId}`);
   return { success: true, error: null };
 }
@@ -291,6 +294,7 @@ export async function deleteCommentAction(
     metadata: { postId, is_admin: isAdmin },
   });
 
+  updateTag(POSTS_LIST_TAG);
   revalidatePath(`/posts/${postId}`);
   return { success: true };
 }
@@ -329,6 +333,7 @@ export async function restoreCommentAction(
     return { success: false, error: error.message };
   }
 
+  updateTag(POSTS_LIST_TAG);
   revalidatePath(`/posts/${postId}`);
   return { success: true };
 }

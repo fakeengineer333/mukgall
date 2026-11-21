@@ -34,7 +34,7 @@ export function MyActivityList({ posts, comments }: MyActivityListProps) {
                 href={`/posts/${post.id}`}
                 className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-800/50 transition-colors"
               >
-                <div className="space-y-0.5 max-w-[80%]">
+                <div className="space-y-0.5 min-w-0 flex-1 pr-2">
                   <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-200 truncate">
                     {post.title}
                   </p>
@@ -42,7 +42,7 @@ export function MyActivityList({ posts, comments }: MyActivityListProps) {
                     {formatDate(post.created_at)} • 조회 {post.view_count}
                   </p>
                 </div>
-                <ArrowRight className="h-4 w-4 text-zinc-400 dark:text-zinc-600" />
+                <ArrowRight className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-600" />
               </Link>
             ))
           )}
@@ -71,15 +71,15 @@ export function MyActivityList({ posts, comments }: MyActivityListProps) {
                 href={`/posts/${comment.post_id}`}
                 className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-800/50 transition-colors"
               >
-                <div className="space-y-0.5 max-w-[80%]">
-                  <p className="text-xs text-zinc-800 dark:text-zinc-300 line-clamp-1">
+                <div className="space-y-0.5 min-w-0 flex-1 pr-2">
+                  <p className="text-xs text-zinc-800 dark:text-zinc-300 line-clamp-1 [overflow-wrap:anywhere]">
                     {comment.content}
                   </p>
                   <p className="text-[11px] text-zinc-500">
                     {formatDate(comment.created_at)}
                   </p>
                 </div>
-                <ArrowRight className="h-4 w-4 text-zinc-400 dark:text-zinc-600" />
+                <ArrowRight className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-600" />
               </Link>
             ))
           )}

@@ -5,6 +5,7 @@ import {
   sanitizePostgrestFilterValue,
   parsePositiveInt,
   extractInternalPostId,
+  hasSupabaseAuthCookie,
 } from "../src/lib/urlSafety.ts";
 import {
   isPrivateOrReservedIp,
@@ -68,6 +69,22 @@ describe("urlSafety utilities", () => {
     );
     assert.equal(extractInternalPostId("//evil.com/posts/99"), null);
     assert.equal(extractInternalPostId("/posts/abc"), null);
+  });
+
+  it("detects Supabase auth token cookies including chunked variants", () => {
+    assert.equal(hasSupabaseAuthCookie([]), false);
+    assert.equal(
+      hasSupabaseAuthCookie([{ name: "theme" }, { name: "recommended_post_1" }]),
+      false
+    );
+    assert.equal(
+      hasSupabaseAuthCookie([{ name: "sb-abcdefgh-auth-token" }]),
+      true
+    );
+    assert.equal(
+      hasSupabaseAuthCookie([{ name: "sb-abcdefgh-auth-token.0" }]),
+      true
+    );
   });
 });
 

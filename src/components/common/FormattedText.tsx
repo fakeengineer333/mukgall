@@ -105,7 +105,7 @@ export function FormattedText({
       }
 
       // Link style based on container
-      let linkClass = "underline underline-offset-2 break-all transition-colors font-medium";
+      let linkClass = "underline underline-offset-2 [overflow-wrap:anywhere] transition-colors font-medium";
       if (bubbleStyle === "me") {
         linkClass += " text-blue-100 hover:text-white underline-offset-4";
       } else {
@@ -153,26 +153,26 @@ export function FormattedText({
     bubbleStyle === "me" ? "me" : bubbleStyle === "other" ? "other" : "default";
 
   return (
-    <div className={`space-y-1.5 ${className}`}>
+    <div className={`min-w-0 max-w-full space-y-1.5 ${className}`}>
       {/* Quote Box if present */}
       {quoteInfo && (
         <div
-          className={`mb-2 p-2 rounded-lg border-l-4 text-xs select-none transition-colors ${
+          className={`mb-2 min-w-0 max-w-full overflow-clip p-2 rounded-lg border-l-4 text-xs select-none transition-colors ${
             bubbleStyle === "me"
               ? "border-l-blue-300 bg-blue-700/60 text-blue-100"
               : "border-l-blue-500 bg-zinc-100/90 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300"
           }`}
         >
-          <div className="flex items-center gap-1 font-bold text-[11px] mb-0.5 opacity-90">
+          <div className="flex items-center gap-1 min-w-0 font-bold text-[11px] mb-0.5 opacity-90">
             <CornerDownRight className="h-3 w-3 shrink-0" />
-            <span>답장: {quoteInfo.author}</span>
+            <span className="truncate">답장: {quoteInfo.author}</span>
           </div>
           <p className="truncate opacity-80 pl-4">{quoteInfo.text}</p>
         </div>
       )}
 
       {/* Clickable text with preserved whitespace and word-break */}
-      <p className="whitespace-pre-wrap break-words leading-relaxed text-left">
+      <p className="whitespace-pre-wrap [overflow-wrap:anywhere] leading-relaxed text-left">
         {renderedContent}
       </p>
 

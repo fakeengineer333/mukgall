@@ -158,31 +158,31 @@ export function ChatRoomHeader({
 
   return (
     <>
-      <div className="shrink-0 sticky top-0 z-30 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 px-4 py-3 backdrop-blur-md">
-        <div className="flex items-center gap-3">
+      <div className="shrink-0 sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 px-4 py-3 backdrop-blur-md">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <Link
             href="/chat"
-            className="rounded-lg p-1 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors"
+            className="shrink-0 rounded-lg p-1 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
             {isGroup ? (
               roomAvatarUrl || room.avatar_url ? (
                 <Avatar
                   src={avatarPreview || roomAvatarUrl || room.avatar_url}
                   fallbackText={title}
                   size="sm"
-                  className="h-9 w-9 ring-2 ring-purple-500/30"
+                  className="h-9 w-9 shrink-0 ring-2 ring-purple-500/30"
                 />
               ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow">
                   <Users className="h-4 w-4" />
                 </div>
               )
             ) : isSelfChat ? (
-              <div className="relative">
+              <div className="relative shrink-0">
                 <Avatar
                   src={myProfile?.avatar_url}
                   fallbackText={title}
@@ -198,22 +198,22 @@ export function ChatRoomHeader({
                 src={otherUser?.avatar_url}
                 fallbackText={title}
                 size="sm"
-                className="h-9 w-9"
+                className="h-9 w-9 shrink-0"
               />
             )}
 
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 max-w-[180px] sm:max-w-xs truncate">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
                   {title}
                 </h2>
                 {isGroup && (
-                  <span className="text-xs text-zinc-500 font-medium">
+                  <span className="text-xs text-zinc-500 font-medium shrink-0">
                     ({participants.length})
                   </span>
                 )}
                 {otherUser?.role === "ADMIN" && !isGroup && !isSelfChat && (
-                  <Badge variant="admin" className="text-[9px] px-1 py-0">
+                  <Badge variant="admin" className="text-[9px] px-1 py-0 shrink-0">
                     관리자
                   </Badge>
                 )}
@@ -223,7 +223,7 @@ export function ChatRoomHeader({
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           {/* Host Settings Button */}
           {isHost && (
             <Button

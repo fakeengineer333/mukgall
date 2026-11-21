@@ -1,10 +1,11 @@
 "use server";
 
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/audit";
+import { POSTS_LIST_TAG } from "@/lib/publicQueries";
 import { Profile } from "@/types";
 
 const profileSchema = z.object({
@@ -117,6 +118,7 @@ export async function updateProfileAction(
     },
   });
 
+  updateTag(POSTS_LIST_TAG);
   revalidatePath("/mypage");
   revalidatePath("/", "layout");
   return { success: true, error: null };

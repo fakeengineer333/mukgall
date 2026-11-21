@@ -63,6 +63,17 @@ export function parsePositiveInt(
 }
 
 /**
+ * Checks whether cookies contain a Supabase auth token cookie (standard or chunked).
+ */
+export function hasSupabaseAuthCookie(
+  cookiesList: readonly { name: string }[]
+): boolean {
+  return cookiesList.some(
+    (c) => c.name.startsWith("sb-") && c.name.includes("-auth-token")
+  );
+}
+
+/**
  * Extracts an internal Mukgall post ID only if the URL is a relative post path
  * or matches the configured application hostname.
  */

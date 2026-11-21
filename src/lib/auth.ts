@@ -1,19 +1,38 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { hasSupabaseAuthCookie } from "@/lib/urlSafety";
 import { Profile } from "@/types";
 
+export interface AuthUserSummary {
+  id: string;
+  email?: string;
+}
+
 /**
- * Request-level memoized authenticated user getter.
- * Calling this multiple times within the same server render (e.g. layout.tsx and page.tsx)
- * will only perform a single network call to Supabase.
+ * Request-level memoized authenticated user getter using getClaims()
+ * with an instant fast-path when no Supabase auth cookie is present.
  */
-export const getAuthUser = cache(async () => {
+export const getAuthUser = cache(async (): Promise<AuthUserSummary | null> => {
   try {
+    const cookieStore = await cookies();
+    if (!hasSupabaseAuthCookie(cookieStore.getAll())) {
+      return null;
+    }
+
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user || null;
+    const { data: claimsData, error } = await supabase.auth.getClaims();
+    if (error || typeof claimsData?.claims?.sub !== "string") {
+      return null;
+    }
+
+    return {
+      id: claimsData.claims.sub,
+      email:
+        typeof claimsData.claims.email === "string"
+          ? claimsData.claims.email
+          : undefined,
+    };
   } catch {
     return null;
   }

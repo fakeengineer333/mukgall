@@ -225,7 +225,7 @@ export function DcPostList({
                             </span>
                           )}
 
-                          <span className={`truncate text-zinc-900 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 ${post.is_notice ? "font-bold text-amber-900 dark:text-amber-200" : ""}`}>
+                          <span className={`min-w-0 truncate text-zinc-900 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 ${post.is_notice ? "font-bold text-amber-900 dark:text-amber-200" : ""}`}>
                             {post.is_notice && (
                               <span className="text-amber-600 dark:text-amber-400 mr-1 font-black">
                                 [공지]
@@ -327,7 +327,7 @@ export function DcPostList({
                     post.is_notice ? "bg-amber-500/10 dark:bg-amber-500/10" : ""
                   }`}
                 >
-                  <div className="flex items-start gap-1.5">
+                  <div className="flex items-start gap-1.5 min-w-0">
                     {post.is_notice ? (
                       <span className="font-black text-amber-600 dark:text-amber-400 text-[10px] bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded shrink-0">
                         공지
@@ -342,7 +342,7 @@ export function DcPostList({
                         <ImageIcon className="h-2.5 w-2.5" />
                       </span>
                     )}
-                    <span className={`text-xs font-semibold line-clamp-1 flex-1 ${post.is_notice ? "text-amber-900 dark:text-amber-200 font-bold" : "text-zinc-900 dark:text-zinc-200"}`}>
+                    <span className={`min-w-0 [overflow-wrap:anywhere] text-xs font-semibold line-clamp-1 flex-1 ${post.is_notice ? "text-amber-900 dark:text-amber-200 font-bold" : "text-zinc-900 dark:text-zinc-200"}`}>
                       {post.is_notice && <span className="text-amber-600 dark:text-amber-400 mr-1">[공지]</span>}
                       {post.title}
                     </span>

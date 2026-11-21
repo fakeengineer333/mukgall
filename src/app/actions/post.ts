@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { headers, cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -10,6 +10,7 @@ import { recordAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { hashClientFingerprint } from "@/lib/ssrfGuard";
+import { POSTS_LIST_TAG } from "@/lib/publicQueries";
 import { Post, Comment } from "@/types";
 
 const postSchema = z.object({
@@ -131,6 +132,7 @@ export async function createPostAction(
       metadata: { title, imageCount: imageUrls.length, isNotice },
     });
 
+    updateTag(POSTS_LIST_TAG);
     revalidatePath("/");
     redirect(`/posts/${fallbackPost.id}`);
   }
@@ -143,6 +145,7 @@ export async function createPostAction(
     metadata: { title, imageCount: imageUrls.length },
   });
 
+  updateTag(POSTS_LIST_TAG);
   revalidatePath("/");
   redirect(`/posts/${newPost.id}`);
 }
@@ -246,6 +249,7 @@ export async function updatePostAction(
     },
   });
 
+  updateTag(POSTS_LIST_TAG);
   revalidatePath(`/posts/${postId}`);
   revalidatePath("/");
   redirect(`/posts/${postId}`);
@@ -300,6 +304,7 @@ export async function recommendPostAction(
         path: "/",
         httpOnly: true,
       });
+      updateTag(POSTS_LIST_TAG);
       revalidatePath(`/posts/${postId}`);
       revalidatePath("/");
       return { success: true, newLikeCount: parsed.new_like_count };
@@ -358,6 +363,7 @@ export async function recommendPostAction(
       httpOnly: true,
     });
 
+    updateTag(POSTS_LIST_TAG);
     revalidatePath(`/posts/${postId}`);
     revalidatePath("/");
     return { success: true, newLikeCount: nextLikes };
@@ -432,6 +438,7 @@ export async function deletePostAction(postId: number): Promise<{ success: boole
     metadata: { is_admin: isAdmin },
   });
 
+  updateTag(POSTS_LIST_TAG);
   revalidatePath("/");
   return { success: true };
 }
@@ -474,9 +481,28 @@ export async function restorePostAction(postId: number): Promise<{ success: bool
     targetId: String(postId),
   });
 
+  updateTag(POSTS_LIST_TAG);
   revalidatePath("/");
   revalidatePath(`/posts/${postId}`);
   return { success: true };
+}
+
+export async function recordPostViewDirect(
+  postId: number,
+  ipHash: string,
+  userId: string | null
+): Promise<void> {
+  try {
+    const adminClient = createAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (adminClient as any).rpc("increment_post_view", {
+      p_post_id: postId,
+      p_user_id: userId,
+      p_ip_hash: ipHash,
+    });
+  } catch (err) {
+    console.warn("[ViewCount] Exception incrementing post view:", err);
+  }
 }
 
 export async function incrementViewCount(postId: number): Promise<void> {
@@ -508,13 +534,7 @@ export async function incrementViewCount(postId: number): Promise<void> {
     });
 
     if (error) {
-      const adminClient = createAdminClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (adminClient as any).rpc("increment_post_view", {
-        p_post_id: postId,
-        p_user_id: user?.id || null,
-        p_ip_hash: ipHash,
-      });
+      await recordPostViewDirect(postId, ipHash, user?.id || null);
     }
   } catch (err) {
     console.warn("[ViewCount] Exception incrementing post view:", err);

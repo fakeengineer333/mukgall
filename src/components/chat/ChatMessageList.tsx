@@ -477,7 +477,7 @@ export function ChatMessageList({
                 </div>
               )}
               <div className="flex justify-center my-3">
-                <span className="rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 px-3 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400 shadow-sm">
+                <span className="max-w-full rounded-2xl text-center [overflow-wrap:anywhere] bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 px-3 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400 shadow-sm">
                   {msg.content}
                 </span>
               </div>
@@ -500,12 +500,12 @@ export function ChatMessageList({
 
             {isMe ? (
               /* MY MESSAGE (Right-aligned) */
-              <div className="flex items-end justify-end gap-1.5 group/me">
+              <div className="flex items-end justify-end gap-1.5 group/me min-w-0">
                 {/* Reply action button on hover */}
                 <button
                   type="button"
                   onClick={() => handleQuoteReply(msg)}
-                  className="opacity-0 group-hover/me:opacity-100 transition-opacity p-1 rounded-full text-zinc-400 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 mb-0.5 cursor-pointer"
+                  className="shrink-0 opacity-0 group-hover/me:opacity-100 transition-opacity p-1 rounded-full text-zinc-400 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 mb-0.5 cursor-pointer"
                   title="답장"
                   aria-label="이 메시지에 답장"
                 >
@@ -528,11 +528,11 @@ export function ChatMessageList({
                 </div>
 
                 {/* Message Bubble */}
-                <div className="max-w-[78%] sm:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-md text-xs sm:text-sm leading-relaxed bg-blue-600 text-white rounded-br-none">
+                <div className="min-w-0 max-w-[min(78%,calc(100%-4.75rem))] sm:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-md text-xs sm:text-sm leading-relaxed bg-blue-600 text-white rounded-br-none">
                   {/* Image attachment */}
                   {msg.image_url && (
                     <div
-                      className="relative aspect-video w-48 sm:w-60 rounded-xl overflow-hidden mb-1.5 cursor-pointer bg-zinc-950"
+                      className="relative aspect-video w-48 sm:w-60 max-w-full rounded-xl overflow-hidden mb-1.5 cursor-pointer bg-zinc-950"
                       onClick={() => setPreviewImage(msg.image_url)}
                     >
                       <Image
@@ -557,27 +557,27 @@ export function ChatMessageList({
               </div>
             ) : (
               /* OTHER USER MESSAGE (Left-aligned) */
-              <div className="flex items-start gap-2 justify-start group/other">
+              <div className="flex items-start gap-2 justify-start group/other min-w-0">
                 <Avatar
                   src={msg.sender?.avatar_url}
                   fallbackText={msg.sender?.username || "유저"}
                   size="sm"
-                  className="h-7 w-7 mt-0.5"
+                  className="h-7 w-7 mt-0.5 shrink-0"
                 />
 
-                <div className="flex flex-col max-w-[78%] sm:max-w-[65%] items-start">
+                <div className="flex flex-col flex-1 min-w-0 items-start">
                   {/* Sender Name */}
-                  <span className="text-[11px] text-zinc-600 dark:text-zinc-400 font-semibold mb-1 pl-1">
+                  <span className="text-[11px] text-zinc-600 dark:text-zinc-400 font-semibold mb-1 pl-1 max-w-full truncate">
                     {msg.sender?.username || "대화 상대"}
                   </span>
 
-                  <div className="flex items-end gap-1.5">
+                  <div className="flex items-end gap-1.5 w-full min-w-0">
                     {/* Message Bubble */}
-                    <div className="rounded-2xl px-4 py-2.5 shadow-md text-xs sm:text-sm leading-relaxed bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-bl-none border border-zinc-200 dark:border-zinc-700/50">
+                    <div className="min-w-0 max-w-[min(78%,calc(100%-4.75rem))] sm:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-md text-xs sm:text-sm leading-relaxed bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-bl-none border border-zinc-200 dark:border-zinc-700/50">
                       {/* Image attachment */}
                       {msg.image_url && (
                         <div
-                          className="relative aspect-video w-48 sm:w-60 rounded-xl overflow-hidden mb-1.5 cursor-pointer bg-zinc-950"
+                          className="relative aspect-video w-48 sm:w-60 max-w-full rounded-xl overflow-hidden mb-1.5 cursor-pointer bg-zinc-950"
                           onClick={() => setPreviewImage(msg.image_url)}
                         >
                           <Image
@@ -619,7 +619,7 @@ export function ChatMessageList({
                     <button
                       type="button"
                       onClick={() => handleQuoteReply(msg)}
-                      className="opacity-0 group-hover/other:opacity-100 transition-opacity p-1 rounded-full text-zinc-400 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 mb-0.5 cursor-pointer"
+                      className="shrink-0 opacity-0 group-hover/other:opacity-100 transition-opacity p-1 rounded-full text-zinc-400 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 mb-0.5 cursor-pointer"
                       title="답장"
                       aria-label="이 메시지에 답장"
                     >
@@ -635,8 +635,8 @@ export function ChatMessageList({
 
       {/* Realtime Typing Indicator */}
       {activeTypingNames.length > 0 && (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-600 dark:text-zinc-400 w-fit animate-in fade-in slide-in-from-bottom-2 duration-150 select-none shadow-sm">
-          <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+        <div className="flex items-center gap-2 max-w-full min-w-0 px-3 py-1.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-600 dark:text-zinc-400 w-fit animate-in fade-in slide-in-from-bottom-2 duration-150 select-none shadow-sm">
+          <span className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">
             {activeTypingNames.join(", ")}님이 입력 중
           </span>
           <span className="flex gap-1 items-center">

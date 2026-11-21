@@ -187,8 +187,8 @@ export function ChatMessageInput({
     <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 p-3 sm:p-4 backdrop-blur-md">
       {/* Quote Reply Banner if active */}
       {quoteReply && (
-        <div className="mb-2.5 flex items-center justify-between px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-600 dark:text-blue-400 animate-in fade-in slide-in-from-bottom-1 duration-150">
-          <div className="flex items-center gap-1.5 truncate">
+        <div className="mb-2.5 flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-600 dark:text-blue-400 animate-in fade-in slide-in-from-bottom-1 duration-150">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <CornerDownRight className="h-3.5 w-3.5 shrink-0" />
             <span className="font-bold shrink-0">{quoteReply.senderName}님에게 답장:</span>
             <span className="truncate text-zinc-600 dark:text-zinc-400">&quot;{quoteReply.textPreview}&quot;</span>

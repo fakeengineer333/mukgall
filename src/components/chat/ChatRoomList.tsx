@@ -172,7 +172,7 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
             href={`/chat/${room.id}`}
             className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group"
           >
-            <div className="flex items-center gap-3.5 min-w-0">
+            <div className="flex items-center gap-3.5 min-w-0 flex-1">
               {isGroup ? (
                 room.avatar_url ? (
                   <Avatar
@@ -207,24 +207,24 @@ export function ChatRoomList({ rooms: initialRooms, currentUserId }: ChatRoomLis
                 />
               )}
 
-              <div className="space-y-1 min-w-0">
+              <div className="space-y-1 min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {displayName}
                   </span>
                   {isGroup && room.participantCount && (
-                    <span className="text-[11px] font-semibold text-zinc-500">
+                    <span className="text-[11px] font-semibold text-zinc-500 shrink-0">
                       {room.participantCount}
                     </span>
                   )}
                   {room.otherUser?.role === "ADMIN" && !isGroup && !isSelfChat && (
-                    <Badge variant="admin" className="text-[9px] px-1 py-0">
+                    <Badge variant="admin" className="text-[9px] px-1 py-0 shrink-0">
                       관리자
                     </Badge>
                   )}
                 </div>
 
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 truncate max-w-[220px] sm:max-w-md">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 truncate">
                   {lastMsg}
                 </p>
               </div>

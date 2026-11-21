@@ -228,7 +228,7 @@ export function PostDetailView({
                   📢 공지
                 </span>
               )}
-              <h1 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-white leading-tight">
+              <h1 className="min-w-0 [overflow-wrap:anywhere] text-xl sm:text-2xl font-black text-zinc-900 dark:text-white leading-tight">
                 {post.title}
               </h1>
             </div>
@@ -291,7 +291,7 @@ export function PostDetailView({
           </div>
 
           {/* Post Content */}
-          <div className="text-sm sm:text-base text-zinc-800 dark:text-zinc-200 leading-relaxed min-h-[100px]">
+          <div className="min-w-0 text-sm sm:text-base text-zinc-800 dark:text-zinc-200 leading-relaxed min-h-[100px]">
             <FormattedText content={post.content} bubbleStyle="post" />
           </div>
 
